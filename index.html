@@ -543,6 +543,17 @@ function renderStocks(stocks, totValue) {
     const dailyLine = hasDailyData && s.dailyPnl !== null
       ? `<div class="text-xs text-gray-400 mt-0.5">일간 <span class="${s.dailyPnl >= 0 ? 'c-profit' : 'c-loss'} font-semibold">${s.dailyRate >= 0 ? '+' : ''}${s.dailyRate?.toFixed(2)}% &nbsp;${s.dailyPnl >= 0 ? '+' : ''}${formatKRW(s.dailyPnl)}</span></div>`
       : '';
+    const hasPrice  = s.avg > 0 && s.cur > 0;
+    const beDiff    = hasPrice ? s.cur - s.avg : 0;
+    const bePct     = hasPrice ? ((s.cur - s.avg) / s.avg * 100) : 0;
+    const beLine    = hasPrice
+      ? `<div class="flex items-center justify-between text-xs text-gray-400 mt-1.5 mb-1">
+           <span>매수평균 <span class="font-semibold text-gray-600">${formatKRW(s.avg)}</span></span>
+           <span>현재가 <span class="font-semibold ${s.cur >= s.avg ? 'c-profit' : 'c-loss'}">${formatKRW(s.cur)}</span>
+             <span class="ml-1 ${beDiff >= 0 ? 'c-profit' : 'c-loss'}">(${beDiff >= 0 ? '+' : ''}${bePct.toFixed(1)}%)</span>
+           </span>
+         </div>`
+      : '';
     return `
       <div class="stock-row">
         <div class="flex items-start justify-between mb-2">
@@ -556,6 +567,7 @@ function renderStocks(stocks, totValue) {
             ${dailyLine}
           </div>
         </div>
+        ${beLine}
         <div class="bar-track">
           <div class="bar-fill" style="width:0%;background:${bc}" data-w="${bar}"></div>
         </div>
