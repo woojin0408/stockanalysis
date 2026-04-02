@@ -516,9 +516,11 @@ function renderAnalysis(stocks, totRate, totValue) {
   comment.textContent = msg;
 
   const warns = [];
-  const maxS = stocks.reduce((a, b) => a.value > b.value ? a : b);
-  const wt   = maxS.value / totValue * 100;
-  if (wt > 50) warns.push(`⚖️ <b>${maxS.name}</b>이(가) 전체의 <b>${wt.toFixed(0)}%</b>를 차지해요. 집중 위험이 있습니다.`);
+  stocks.forEach(s => {
+    const wt = s.value / totValue * 100;
+    if (wt > 50) warns.push(`🚨 <b>${s.name}</b>이(가) 전체의 <b>${wt.toFixed(0)}%</b>를 차지해요. 심각한 집중 위험입니다.`);
+    else if (wt > 30) warns.push(`⚖️ <b>${s.name}</b> 비중이 <b>${wt.toFixed(0)}%</b>예요. 특정 종목 쏠림을 주의하세요.`);
+  });
   big.forEach(s => warns.push(`🔴 <b>${s.name}</b> ${s.rate.toFixed(1)}% 손실 — 손절 라인을 검토해보세요.`));
   if (stocks.length < 3) warns.push('📊 종목 수가 적어요. 리스크 분산을 고려해보세요.');
   if (warns.length === 0) warns.push('✅ 특별한 리스크 요소가 감지되지 않았어요.');
