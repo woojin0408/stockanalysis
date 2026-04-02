@@ -178,6 +178,25 @@
       </div>
     </div>
 
+    <!-- Comparison card (hidden until 2+ snapshots) -->
+    <div class="card animate-slide-up hidden" id="compare-card" style="animation-delay:.17s">
+      <div class="text-xs font-semibold text-gray-400 mb-2">전 기록 대비</div>
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">평가금액 변화</div>
+          <div class="text-base font-bold" id="cmp-value">—</div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-gray-400 mb-0.5">수익률 변화</div>
+          <div class="text-base font-bold" id="cmp-rate">—</div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-gray-400 mb-0.5">비교 기준</div>
+          <div class="text-xs font-semibold text-gray-500" id="cmp-prev-date">—</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Analysis -->
     <div class="card animate-slide-up" style="animation-delay:.2s">
       <div class="flex items-center justify-between mb-4">
@@ -436,6 +455,41 @@ function render({ stocks, header }, date) {
   renderStocks(stocks, totValue);
   renderStockChart(stocks);
   renderAllocationChart(stocks, totValue);
+  renderCompareCard(date);
+}
+
+function renderCompareCard(currentDate) {
+  const card = document.getElementById('compare-card');
+  const snaps = getSnapshots();
+  const dates = Object.keys(snaps).sort();
+  const idx   = dates.indexOf(currentDate);
+
+  if (idx <= 0) { card.classList.add('hidden'); return; }
+
+  const prevDate = dates[idx - 1];
+  const prev = snaps[prevDate];
+  const curr = snaps[currentDate];
+
+  const prevVal  = prev.header?.totalValue ?? prev.stocks.reduce((s, x) => s + x.value, 0);
+  const currVal  = curr.header?.totalValue ?? curr.stocks.reduce((s, x) => s + x.value, 0);
+  const prevRate = prev.header?.totalRate  ?? 0;
+  const currRate = curr.header?.totalRate  ?? 0;
+
+  const valDiff  = currVal - prevVal;
+  const rateDiff = currRate - prevRate;
+
+  const valEl  = document.getElementById('cmp-value');
+  const rateEl = document.getElementById('cmp-rate');
+
+  valEl.textContent  = (valDiff >= 0 ? '+' : '') + formatKRW(valDiff);
+  valEl.className    = 'text-base font-bold ' + (valDiff >= 0 ? 'c-profit' : 'c-loss');
+
+  rateEl.textContent = (rateDiff >= 0 ? '+' : '') + rateDiff.toFixed(2) + '%p';
+  rateEl.className   = 'text-base font-bold ' + (rateDiff >= 0 ? 'c-profit' : 'c-loss');
+
+  document.getElementById('cmp-prev-date').textContent = formatDateKR(prevDate);
+
+  card.classList.remove('hidden');
 }
 
 function renderAnalysis(stocks, totRate, totValue) {
