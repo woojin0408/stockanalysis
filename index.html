@@ -552,6 +552,12 @@ function renderAllocationChart(stocks, totValue) {
   const ctx = document.getElementById('allocation-chart').getContext('2d');
   if (allocChartInst) { allocChartInst.destroy(); allocChartInst = null; }
 
+  if (!totValue || totValue <= 0 || !stocks.length) {
+    document.getElementById('allocation-card').classList.add('hidden');
+    return;
+  }
+  document.getElementById('allocation-card').classList.remove('hidden');
+
   const sorted = [...stocks].sort((a, b) => b.value - a.value);
   const COLORS = [
     '#3182F6','#16B364','#F59E0B','#8B5CF6','#F04438',
@@ -593,7 +599,7 @@ function renderAllocationChart(stocks, totValue) {
           bodyFont: { family: 'Pretendard', size: 13 },
           padding: 10,
           callbacks: {
-            label: ctx => `  ${ctx.label}: ${ctx.parsed}%`
+            label: tip => `  ${tip.label}: ${tip.parsed}%`
           }
         }
       }
