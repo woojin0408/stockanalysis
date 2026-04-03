@@ -184,6 +184,7 @@
       <div class="card animate-slide-up" style="animation-delay:.07s">
         <div class="text-xs text-gray-400 font-medium mb-1">총 수익률</div>
         <div class="text-lg font-extrabold leading-tight" id="s-rate">—</div>
+        <div class="text-xs font-semibold mt-0.5 leading-tight" id="s-profit">—</div>
       </div>
       <div class="card animate-slide-up" style="animation-delay:.14s">
         <div class="text-xs text-gray-400 font-medium mb-1" id="s-pnl-label">평가손익</div>
@@ -465,9 +466,12 @@ function render({ stocks, header }, date) {
   const sPnl  = document.getElementById('s-pnl');
   const sPnlLabel = document.getElementById('s-pnl-label');
 
+  const sProfit = document.getElementById('s-profit');
   sRate.className = 'text-lg font-extrabold leading-tight ' + (totRate >= 0 ? 'c-profit' : 'c-loss');
+  sProfit.className = 'text-xs font-semibold mt-0.5 leading-tight ' + (totPnl >= 0 ? 'c-profit' : 'c-loss');
   animateNumber(document.getElementById('s-total'), totValue, 900, v => formatKRW(v));
   animateNumber(sRate, totRate, 900, v => pctFmt(v));
+  animateNumber(sProfit, totPnl, 900, v => (v >= 0 ? '+' : '') + formatKRW(v));
 
   if (dailyPnl !== null) {
     sPnlLabel.textContent = '일간 수익';
