@@ -297,6 +297,20 @@
       <div id="snapshot-list" class="flex flex-wrap gap-2"></div>
     </div>
 
+    <!-- Period summary card -->
+    <div class="card animate-slide-up hidden" id="period-summary-card">
+      <div class="flex items-center justify-between mb-4">
+        <span class="font-bold text-gray-900">기간별 수익률</span>
+        <div class="flex gap-1">
+          <button id="period-tab-week" onclick="switchPeriodTab('week')"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition bg-blue-500 text-white">주간</button>
+          <button id="period-tab-month" onclick="switchPeriodTab('month')"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition bg-gray-100 text-gray-500">월간</button>
+        </div>
+      </div>
+      <div id="period-list" class="space-y-1"></div>
+    </div>
+
   </div>
 
 </div>
@@ -1104,6 +1118,7 @@ function renderHistorySection(activeDate) {
 
   renderHistoryChart(snaps, dates, activeDate);
   renderSnapshotList(snaps, activeDate);
+  renderPeriodList(snaps);
 
   /* Range label */
   if (dates.length >= 2) {
@@ -1204,6 +1219,100 @@ function renderSnapshotList(snaps, activeDate) {
         ${formatDateKR(d)}
         <span class="snap-rate text-xs font-normal ${isAct ? '' : rcls}">${pctFmt(rate)}</span>
       </button>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   PERIOD SUMMARY
+══════════════════════════════════════════ */
+let currentPeriodTab = 'week';
+
+function switchPeriodTab(tab) {
+  currentPeriodTab = tab;
+  const weekBtn  = document.getElementById('period-tab-week');
+  const monthBtn = document.getElementById('period-tab-month');
+  weekBtn.className  = 'px-3 py-1.5 rounded-xl text-xs font-semibold transition ' +
+    (tab === 'week'  ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500');
+  monthBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold transition ' +
+    (tab === 'month' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500');
+  renderPeriodList(getSnapshots());
+}
+
+function getMonthKey(dateStr) {
+  return dateStr.substring(0, 7);
+}
+
+function getISOWeekKey(dateStr) {
+  const d   = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay() === 0 ? 7 : d.getDay();
+  const mon = new Date(d);
+  mon.setDate(d.getDate() - (day - 1));
+  const y  = mon.getFullYear();
+  const wk = Math.ceil(
+    ((mon - new Date(y, 0, 1)) / 86400000 + new Date(y, 0, 1).getDay() + 1) / 7
+  );
+  return `${y}-W${String(wk).padStart(2, '0')}`;
+}
+
+function groupSnapshotsByPeriod(snaps, mode) {
+  const groups = {};
+  Object.keys(snaps).sort().forEach(d => {
+    const key = mode === 'week' ? getISOWeekKey(d) : getMonthKey(d);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(d);
+  });
+  return groups;
+}
+
+function renderPeriodList(snaps) {
+  const card  = document.getElementById('period-summary-card');
+  const dates = Object.keys(snaps).sort();
+  if (dates.length < 2) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  const groups = groupSnapshotsByPeriod(snaps, currentPeriodTab);
+  const keys   = Object.keys(groups).sort().reverse();
+
+  document.getElementById('period-list').innerHTML = keys.map(key => {
+    const periodDates = groups[key].sort();
+    const firstSnap   = snaps[periodDates[0]];
+    const lastSnap    = snaps[periodDates[periodDates.length - 1]];
+
+    const firstVal  = firstSnap.header?.totalValue ?? firstSnap.stocks.reduce((s, x) => s + x.value, 0);
+    const lastVal   = lastSnap.header?.totalValue  ?? lastSnap.stocks.reduce((s, x) => s + x.value, 0);
+    const firstRate = firstSnap.header?.totalRate  ?? 0;
+    const lastRate  = lastSnap.header?.totalRate   ?? 0;
+
+    const valDiff  = lastVal - firstVal;
+    const rateDiff = lastRate - firstRate;
+    const hasDiff  = periodDates.length > 1;
+
+    let label;
+    if (currentPeriodTab === 'month') {
+      const [y, m] = key.split('-');
+      label = `${y}년 ${parseInt(m)}월`;
+    } else {
+      const d = new Date(periodDates[0] + 'T00:00:00');
+      label = `${d.getMonth() + 1}월 ${d.getDate()}일 주`;
+    }
+
+    return `
+      <div class="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+        <div>
+          <div class="text-sm font-semibold text-gray-800">${label}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${periodDates.length}개 기록</div>
+        </div>
+        <div class="text-right">
+          ${hasDiff ? `
+            <div class="text-sm font-bold ${rateDiff >= 0 ? 'c-profit' : 'c-loss'}">
+              ${rateDiff >= 0 ? '+' : ''}${rateDiff.toFixed(2)}%p
+            </div>
+            <div class="text-xs font-semibold mt-0.5 ${valDiff >= 0 ? 'c-profit' : 'c-loss'}">
+              ${valDiff >= 0 ? '+' : ''}${formatKRW(valDiff)}
+            </div>
+          ` : `<div class="text-xs text-gray-400">기록 1개</div>`}
+        </div>
+      </div>`;
   }).join('');
 }
 
