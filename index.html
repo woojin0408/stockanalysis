@@ -127,10 +127,31 @@
 <div class="max-w-xl mx-auto px-4 py-10 space-y-4">
 
   <!-- ── Header ── -->
-  <div class="mb-3">
-    <p class="text-xs font-semibold text-blue-500 mb-1 tracking-wide uppercase">Portfolio Tracker</p>
-    <h1 class="text-2xl font-bold text-gray-900">내 투자 분석</h1>
-    <p class="text-sm text-gray-400 mt-1">토스 앱에서 복사 → 날짜 선택 → 분석 & 저장</p>
+  <div class="mb-3 flex items-start justify-between">
+    <div>
+      <p class="text-xs font-semibold text-blue-500 mb-1 tracking-wide uppercase">Portfolio Tracker</p>
+      <h1 class="text-2xl font-bold text-gray-900">내 투자 분석</h1>
+      <p class="text-sm text-gray-400 mt-1">토스 앱에서 복사 → 날짜 선택 → 분석 & 저장</p>
+    </div>
+    <button onclick="toggleSettings()" class="mt-1 p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" title="설정">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── Settings Panel ── -->
+  <div id="settings-panel" class="card hidden animate-slide-up">
+    <div class="font-bold text-gray-900 mb-3">설정</div>
+    <label class="text-xs font-semibold text-gray-500 block mb-1.5">Alpha Vantage API 키</label>
+    <div class="flex gap-2 mb-2">
+      <input type="text" id="av-api-key" placeholder="API 키를 입력하세요"
+        class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition" />
+      <button onclick="saveApiKey()" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-semibold hover:bg-blue-600 transition">저장</button>
+    </div>
+    <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener"
+      class="text-xs text-blue-400 hover:text-blue-600">무료 키 발급 → alphavantage.co ↗</a>
   </div>
 
   <!-- ── Input Card ── -->
@@ -352,6 +373,29 @@ function showToast(msg) {
 /* ══════════════════════════════════════════
    STORAGE
 ══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   SETTINGS — API KEY
+══════════════════════════════════════════ */
+const AV_KEY_STORAGE = 'av_api_key_v1';
+
+function getApiKey() {
+  return localStorage.getItem(AV_KEY_STORAGE) || '';
+}
+
+function saveApiKey() {
+  const val = document.getElementById('av-api-key').value.trim();
+  localStorage.setItem(AV_KEY_STORAGE, val);
+  showToast('API 키가 저장됐어요');
+}
+
+function toggleSettings() {
+  const panel = document.getElementById('settings-panel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) {
+    document.getElementById('av-api-key').value = getApiKey();
+  }
+}
+
 const STORAGE_KEY = 'portfolio_snapshots_v1';
 
 function getSnapshots() {
