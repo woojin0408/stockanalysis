@@ -585,6 +585,35 @@ function closeStockModal(event) {
   document.body.style.overflow = '';
 }
 
+/* ══════════════════════════════════════════
+   TICKER MAP
+══════════════════════════════════════════ */
+const TICKER_MAP_KEY = 'ticker_map_v1';
+
+function getTickerMap() {
+  try { return JSON.parse(localStorage.getItem(TICKER_MAP_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function getTicker(stockName) {
+  return getTickerMap()[stockName] || null;
+}
+
+function saveTicker() {
+  const ticker = document.getElementById('ticker-input-field').value.trim().toUpperCase();
+  if (!ticker) { showToast('티커 코드를 입력해주세요'); return; }
+
+  const map = getTickerMap();
+  map[currentModalStock] = ticker;
+  localStorage.setItem(TICKER_MAP_KEY, JSON.stringify(map));
+
+  document.getElementById('modal-ticker').textContent = ticker;
+  document.getElementById('modal-ticker-input').classList.add('hidden');
+
+  const apiKey = getApiKey();
+  if (apiKey) loadStockData(currentModalStock, ticker, apiKey);
+}
+
 function render({ stocks, header }, date) {
   const totValue    = header?.totalValue    ?? stocks.reduce((s, x) => s + x.value, 0);
   const totInvested = header?.totalInvested ?? stocks.reduce((s, x) => s + x.invested, 0);
@@ -773,7 +802,7 @@ function renderStocks(stocks, totValue) {
          </div>`
       : '';
     return `
-      <div class="stock-row">
+      <div class="stock-row cursor-pointer" onclick="openStockModal('${s.name.replace(/'/g, "\\'")}')">
         <div class="flex items-start justify-between mb-2">
           <div>
             <span class="font-semibold text-gray-900 text-sm">${s.name}</span>
