@@ -614,6 +614,80 @@ function saveTicker() {
   if (apiKey) loadStockData(currentModalStock, ticker, apiKey);
 }
 
+/* ══════════════════════════════════════════
+   ALPHA VANTAGE — cache + fetch
+══════════════════════════════════════════ */
+const AV_CACHE_KEY = 'av_cache_v1';
+const AV_CACHE_TTL = 60 * 60 * 1000; // 1시간
+
+function getAvCache() {
+  try { return JSON.parse(localStorage.getItem(AV_CACHE_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function setAvCache(key, data) {
+  const cache = getAvCache();
+  cache[key] = { data, ts: Date.now() };
+  try { localStorage.setItem(AV_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+function getFromCache(key) {
+  const entry = getAvCache()[key];
+  if (!entry) return null;
+  if (Date.now() - entry.ts > AV_CACHE_TTL) return null;
+  return entry.data;
+}
+
+async function fetchCurrentQuote(ticker, apiKey) {
+  const cacheKey = `quote_${ticker}`;
+  const cached = getFromCache(cacheKey);
+  if (cached) return cached;
+
+  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${apiKey}`;
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error('네트워크 오류가 발생했어요');
+  const json = await res.json();
+
+  if (json['Note']) throw new Error('API 호출 한도를 초과했어요 (일 25회)');
+  if (json['Error Message']) throw new Error('티커 코드를 찾을 수 없어요');
+
+  const q = json['Global Quote'];
+  if (!q || !q['05. price']) throw new Error('현재 시세를 불러올 수 없어요');
+
+  const result = {
+    price:     parseFloat(q['05. price']),
+    change:    parseFloat(q['09. change']),
+    changePct: parseFloat(q['10. change percent']),
+  };
+  setAvCache(cacheKey, result);
+  return result;
+}
+
+async function fetchDailyHistory(ticker, apiKey) {
+  const cacheKey = `daily_${ticker}`;
+  const cached = getFromCache(cacheKey);
+  if (cached) return cached;
+
+  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(ticker)}&outputsize=compact&apikey=${apiKey}`;
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error('네트워크 오류가 발생했어요');
+  const json = await res.json();
+
+  if (json['Note']) throw new Error('API 호출 한도를 초과했어요 (일 25회)');
+  if (json['Error Message']) throw new Error('티커 코드를 찾을 수 없어요');
+
+  const series = json['Time Series (Daily)'];
+  if (!series) throw new Error('차트 데이터를 불러올 수 없어요');
+
+  const dates = Object.keys(series).sort().slice(-30);
+  const result = {
+    dates,
+    closes: dates.map(d => parseFloat(series[d]['4. close'])),
+  };
+  setAvCache(cacheKey, result);
+  return result;
+}
+
 function render({ stocks, header }, date) {
   const totValue    = header?.totalValue    ?? stocks.reduce((s, x) => s + x.value, 0);
   const totInvested = header?.totalInvested ?? stocks.reduce((s, x) => s + x.invested, 0);
