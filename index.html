@@ -127,31 +127,10 @@
 <div class="max-w-xl mx-auto px-4 py-10 space-y-4">
 
   <!-- ── Header ── -->
-  <div class="mb-3 flex items-start justify-between">
-    <div>
-      <p class="text-xs font-semibold text-blue-500 mb-1 tracking-wide uppercase">Portfolio Tracker</p>
-      <h1 class="text-2xl font-bold text-gray-900">내 투자 분석</h1>
-      <p class="text-sm text-gray-400 mt-1">토스 앱에서 복사 → 날짜 선택 → 분석 & 저장</p>
-    </div>
-    <button onclick="toggleSettings()" class="mt-1 p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" title="설정">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- ── Settings Panel ── -->
-  <div id="settings-panel" class="card hidden animate-slide-up">
-    <div class="font-bold text-gray-900 mb-3">설정</div>
-    <label class="text-xs font-semibold text-gray-500 block mb-1.5">Alpha Vantage API 키</label>
-    <div class="flex gap-2 mb-2">
-      <input type="text" id="av-api-key" placeholder="API 키를 입력하세요"
-        class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition" />
-      <button onclick="saveApiKey()" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-semibold hover:bg-blue-600 transition">저장</button>
-    </div>
-    <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener"
-      class="text-xs text-blue-400 hover:text-blue-600">무료 키 발급 → alphavantage.co ↗</a>
+  <div class="mb-3">
+    <p class="text-xs font-semibold text-blue-500 mb-1 tracking-wide uppercase">Portfolio Tracker</p>
+    <h1 class="text-2xl font-bold text-gray-900">내 투자 분석</h1>
+    <p class="text-sm text-gray-400 mt-1">토스 앱에서 복사 → 날짜 선택 → 분석 & 저장</p>
   </div>
 
   <!-- ── Input Card ── -->
@@ -356,10 +335,6 @@
         </div>
       </div>
 
-      <!-- API key missing notice -->
-      <div id="modal-no-apikey" class="hidden mt-5 p-4 bg-yellow-50 rounded-2xl text-sm text-yellow-700">
-        API 키를 먼저 설정해주세요. 우측 상단 ⚙ 버튼을 눌러 Alpha Vantage API 키를 입력하세요.
-      </div>
     </div>
   </div>
 </div>
@@ -436,29 +411,6 @@ function showToast(msg) {
 /* ══════════════════════════════════════════
    STORAGE
 ══════════════════════════════════════════ */
-/* ══════════════════════════════════════════
-   SETTINGS — API KEY
-══════════════════════════════════════════ */
-const AV_KEY_STORAGE = 'av_api_key_v1';
-
-function getApiKey() {
-  return localStorage.getItem(AV_KEY_STORAGE) || '';
-}
-
-function saveApiKey() {
-  const val = document.getElementById('av-api-key').value.trim();
-  localStorage.setItem(AV_KEY_STORAGE, val);
-  showToast('API 키가 저장됐어요');
-}
-
-function toggleSettings() {
-  const panel = document.getElementById('settings-panel');
-  panel.classList.toggle('hidden');
-  if (!panel.classList.contains('hidden')) {
-    document.getElementById('av-api-key').value = getApiKey();
-  }
-}
-
 const STORAGE_KEY = 'portfolio_snapshots_v1';
 
 function getSnapshots() {
@@ -571,18 +523,11 @@ function openStockModal(stockName) {
   document.getElementById('modal-chart-loading').classList.add('hidden');
   document.getElementById('modal-chart-error').classList.add('hidden');
   document.getElementById('modal-ticker-input').classList.add('hidden');
-  document.getElementById('modal-no-apikey').classList.add('hidden');
 
   if (modalChartInst) { modalChartInst.destroy(); modalChartInst = null; }
 
   document.getElementById('stock-modal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    document.getElementById('modal-no-apikey').classList.remove('hidden');
-    return;
-  }
 
   const ticker = getTicker(stockName);
   if (!ticker) {
@@ -590,7 +535,7 @@ function openStockModal(stockName) {
     return;
   }
 
-  loadStockData(stockName, ticker, apiKey);
+  loadStockData(stockName, ticker);
 }
 
 function closeStockModal(event) {
@@ -624,8 +569,7 @@ function saveTicker() {
   document.getElementById('modal-ticker').textContent = ticker;
   document.getElementById('modal-ticker-input').classList.add('hidden');
 
-  const apiKey = getApiKey();
-  if (apiKey) loadStockData(currentModalStock, ticker, apiKey);
+  loadStockData(currentModalStock, ticker);
 }
 
 /* ══════════════════════════════════════════
@@ -652,70 +596,58 @@ function getFromCache(key) {
   return entry.data;
 }
 
-async function fetchCurrentQuote(ticker, apiKey) {
-  const cacheKey = `quote_${ticker}`;
+async function fetchYahooFinance(ticker) {
+  const cacheKey = `yf_${ticker}`;
   const cached = getFromCache(cacheKey);
   if (cached) return cached;
 
-  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${apiKey}`;
-  const res  = await fetch(url);
-  if (!res.ok) throw new Error('네트워크 오류가 발생했어요');
-  const json = await res.json();
+  const yfUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1mo`;
+  const url   = `https://corsproxy.io/?url=${encodeURIComponent(yfUrl)}`;
+  const res   = await fetch(url);
+  if (!res.ok) throw new Error('데이터를 불러올 수 없어요');
+  const json  = await res.json();
 
-  if (json['Note']) throw new Error('API 호출 한도를 초과했어요 (일 25회)');
-  if (json['Error Message']) throw new Error('티커 코드를 찾을 수 없어요');
+  const result = json.chart?.result?.[0];
+  if (!result) throw new Error('종목 데이터를 찾을 수 없어요 (티커 확인)');
 
-  const q = json['Global Quote'];
-  if (!q || !q['05. price']) throw new Error('현재 시세를 불러올 수 없어요');
+  const meta       = result.meta;
+  const timestamps = result.timestamp || [];
+  const rawCloses  = result.indicators?.quote?.[0]?.close || [];
 
-  const result = {
-    price:     parseFloat(q['05. price']),
-    change:    parseFloat(q['09. change']),
-    changePct: parseFloat(q['10. change percent']),
+  const validPairs = timestamps
+    .map((ts, i) => ({ ts, close: rawCloses[i] }))
+    .filter(d => d.close != null);
+
+  const dates  = validPairs.map(d => {
+    const dt = new Date(d.ts * 1000);
+    return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  });
+  const closes = validPairs.map(d => d.close);
+
+  const currentPrice = meta.regularMarketPrice;
+  const prevClose    = meta.previousClose ?? meta.chartPreviousClose ?? currentPrice;
+  const change       = currentPrice - prevClose;
+  const changePct    = prevClose !== 0 ? (change / prevClose) * 100 : 0;
+
+  const data = {
+    quote:   { price: currentPrice, change, changePct },
+    history: { dates: dates.slice(-30), closes: closes.slice(-30) },
   };
-  setAvCache(cacheKey, result);
-  return result;
-}
-
-async function fetchDailyHistory(ticker, apiKey) {
-  const cacheKey = `daily_${ticker}`;
-  const cached = getFromCache(cacheKey);
-  if (cached) return cached;
-
-  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(ticker)}&outputsize=compact&apikey=${apiKey}`;
-  const res  = await fetch(url);
-  if (!res.ok) throw new Error('네트워크 오류가 발생했어요');
-  const json = await res.json();
-
-  if (json['Note']) throw new Error('API 호출 한도를 초과했어요 (일 25회)');
-  if (json['Error Message']) throw new Error('티커 코드를 찾을 수 없어요');
-
-  const series = json['Time Series (Daily)'];
-  if (!series) throw new Error('차트 데이터를 불러올 수 없어요');
-
-  const dates = Object.keys(series).sort().slice(-30);
-  const result = {
-    dates,
-    closes: dates.map(d => parseFloat(series[d]['4. close'])),
-  };
-  setAvCache(cacheKey, result);
-  return result;
+  setAvCache(cacheKey, data);
+  return data;
 }
 
 /* ══════════════════════════════════════════
    STOCK MODAL — data load + chart
 ══════════════════════════════════════════ */
-async function loadStockData(stockName, ticker, apiKey) {
+async function loadStockData(stockName, ticker) {
   document.getElementById('modal-ticker').textContent = ticker;
   document.getElementById('modal-chart-loading').classList.remove('hidden');
   document.getElementById('modal-chart-area').classList.add('hidden');
   document.getElementById('modal-chart-error').classList.add('hidden');
 
   try {
-    const [quote, history] = await Promise.all([
-      fetchCurrentQuote(ticker, apiKey),
-      fetchDailyHistory(ticker, apiKey),
-    ]);
+    const { quote, history } = await fetchYahooFinance(ticker);
 
     document.getElementById('modal-chart-loading').classList.add('hidden');
 
@@ -723,7 +655,7 @@ async function loadStockData(stockName, ticker, apiKey) {
     const changeEl = document.getElementById('modal-change');
     priceEl.textContent = quote.price.toLocaleString('ko-KR') + '원';
     const sign = quote.change >= 0 ? '+' : '';
-    changeEl.textContent = `${sign}${quote.change.toLocaleString('ko-KR')}원 (${sign}${quote.changePct.toFixed(2)}%)`;
+    changeEl.textContent = `${sign}${quote.change.toLocaleString('ko-KR', {maximumFractionDigits: 0})}원 (${sign}${quote.changePct.toFixed(2)}%)`;
     changeEl.className   = 'text-sm font-semibold ' + (quote.change >= 0 ? 'c-profit' : 'c-loss');
 
     renderModalChart(history);
