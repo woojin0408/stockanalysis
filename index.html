@@ -688,6 +688,98 @@ async function fetchDailyHistory(ticker, apiKey) {
   return result;
 }
 
+/* ══════════════════════════════════════════
+   STOCK MODAL — data load + chart
+══════════════════════════════════════════ */
+async function loadStockData(stockName, ticker, apiKey) {
+  document.getElementById('modal-ticker').textContent = ticker;
+  document.getElementById('modal-chart-loading').classList.remove('hidden');
+  document.getElementById('modal-chart-area').classList.add('hidden');
+  document.getElementById('modal-chart-error').classList.add('hidden');
+
+  try {
+    const [quote, history] = await Promise.all([
+      fetchCurrentQuote(ticker, apiKey),
+      fetchDailyHistory(ticker, apiKey),
+    ]);
+
+    document.getElementById('modal-chart-loading').classList.add('hidden');
+
+    const priceEl  = document.getElementById('modal-price');
+    const changeEl = document.getElementById('modal-change');
+    priceEl.textContent = quote.price.toLocaleString('ko-KR') + '원';
+    const sign = quote.change >= 0 ? '+' : '';
+    changeEl.textContent = `${sign}${quote.change.toLocaleString('ko-KR')}원 (${sign}${quote.changePct.toFixed(2)}%)`;
+    changeEl.className   = 'text-sm font-semibold ' + (quote.change >= 0 ? 'c-profit' : 'c-loss');
+
+    renderModalChart(history);
+    document.getElementById('modal-chart-area').classList.remove('hidden');
+  } catch (err) {
+    document.getElementById('modal-chart-loading').classList.add('hidden');
+    const errEl = document.getElementById('modal-chart-error');
+    errEl.textContent = err.message || '현재 시세를 불러올 수 없어요';
+    errEl.classList.remove('hidden');
+  }
+}
+
+function renderModalChart(history) {
+  if (modalChartInst) { modalChartInst.destroy(); modalChartInst = null; }
+  const ctx   = document.getElementById('modal-chart').getContext('2d');
+  const first = history.closes[0];
+  const last  = history.closes[history.closes.length - 1];
+  const color   = last >= first ? '#16B364' : '#F04438';
+  const bgColor = last >= first ? 'rgba(22,179,100,.08)' : 'rgba(240,68,56,.08)';
+
+  const labels = history.dates.map(d => {
+    const dt = new Date(d + 'T00:00:00');
+    return `${dt.getMonth() + 1}/${dt.getDate()}`;
+  });
+
+  modalChartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: history.closes,
+        borderColor: color,
+        backgroundColor: bgColor,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        fill: true,
+        tension: 0.35,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 500, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1A1A2E',
+          titleFont: { family: 'Pretendard', size: 11 },
+          bodyFont:  { family: 'Pretendard', size: 12 },
+          padding: 8,
+          callbacks: { label: ctx => `  ${ctx.parsed.y.toLocaleString('ko-KR')}원` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { font: { family: 'Pretendard', size: 10 }, color: '#8B95A1', maxTicksLimit: 6 }
+        },
+        y: {
+          grid: { color: '#F0F1F5' },
+          border: { display: false },
+          ticks: { font: { family: 'Pretendard', size: 10 }, color: '#8B95A1', callback: v => v.toLocaleString('ko-KR') }
+        }
+      }
+    }
+  });
+}
+
 function render({ stocks, header }, date) {
   const totValue    = header?.totalValue    ?? stocks.reduce((s, x) => s + x.value, 0);
   const totInvested = header?.totalInvested ?? stocks.reduce((s, x) => s + x.invested, 0);
