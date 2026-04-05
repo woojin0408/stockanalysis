@@ -923,7 +923,7 @@ function renderStocks(stocks, totValue) {
          </div>`
       : '';
     return `
-      <div class="stock-row cursor-pointer" onclick="openStockModal('${s.name.replace(/'/g, "\\'")}')">
+      <div class="stock-row">
         <div class="flex items-start justify-between mb-2">
           <div>
             <span class="font-semibold text-gray-900 text-sm">${s.name}</span>
