@@ -284,6 +284,17 @@
         <p id="main-comment" class="text-sm text-gray-400 leading-relaxed"></p>
       </div>
 
+      <!-- Strategy card -->
+      <div class="card animate-slide-up col-span-2" id="strategy-card" data-card-id="strategy-card" style="animation-delay:.24s">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="flex items-center justify-between mb-4">
+          <span class="font-bold text-gray-900">매매 전략 가이드</span>
+          <span class="text-xs text-gray-300">수익률 기반 규칙</span>
+        </div>
+        <div id="strategy-portfolio" class="mb-4"></div>
+        <div id="strategy-stocks" class="space-y-2"></div>
+      </div>
+
       <!-- Stock list -->
       <div class="card animate-slide-up col-span-2" data-card-id="stock-list-card" style="animation-delay:.27s">
         <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
@@ -832,6 +843,7 @@ function render({ stocks, header }, date) {
   }
 
   renderAnalysis(stocks, totRate, totValue);
+  renderStrategyCard(stocks, totRate, totValue);
   renderStocks(stocks, totValue);
   renderStockChart(stocks);
   renderAllocationChart(stocks, totValue);
@@ -1315,6 +1327,83 @@ function renderPeriodList(snaps) {
         </div>
       </div>`;
   }).join('');
+}
+
+/* ══════════════════════════════════════════
+   STRATEGY CARD
+══════════════════════════════════════════ */
+function getPortfolioStrategy(totRate) {
+  if (totRate <= -20) return {
+    icon: '🛑', badge: 'badge-danger', label: '손절 라인 검토 필요',
+    msg: `전체 수익률 ${totRate.toFixed(1)}%. 추가 하락 위험이 높아요. 포지션 축소 또는 손절 라인을 점검하세요.`
+  };
+  if (totRate <= -8) return {
+    icon: '📉', badge: 'badge-warning', label: '평단가 낮추기 구간',
+    msg: `수익률 ${totRate.toFixed(1)}%. 여유 자금이 있다면 분할 매수로 평균단가를 낮출 수 있어요. 단, 종목 펀더멘털 확인 후 진행하세요.`
+  };
+  if (totRate < 8) return {
+    icon: '⏳', badge: 'badge-warning', label: '현 포지션 유지',
+    msg: `수익률 ${totRate.toFixed(1)}%. 수익 실현보다 기다리는 구간이에요. 조급하게 매도할 필요 없어요.`
+  };
+  if (totRate < 18) return {
+    icon: '💰', badge: 'badge-good', label: '일부 수익 실현 고려',
+    msg: `수익률 ${totRate.toFixed(1)}%. 전체 포지션의 15~25% 분할 매도를 고려해보세요. 나머지는 계속 홀드.`
+  };
+  if (totRate < 35) return {
+    icon: '🎯', badge: 'badge-good', label: '분할 매도 권장',
+    msg: `수익률 ${totRate.toFixed(1)}%. 30~50% 분할 매도로 수익을 확정할 시점이에요. 전량 매도보다 단계적으로 진행하세요.`
+  };
+  return {
+    icon: '🚀', badge: 'badge-good', label: '강력한 수익 실현 구간',
+    msg: `수익률 ${totRate.toFixed(1)}%. 목표 수익률을 크게 초과했어요. 50% 이상 매도해 수익을 확정하고 재투자 기회를 노리세요.`
+  };
+}
+
+function getStockAction(rate) {
+  if (rate <= -25) return { label: '손절 검토', cls: 'badge-danger' };
+  if (rate <= -10) return { label: '평단 낮추기 고려', cls: 'badge-warning' };
+  if (rate <   0) return { label: '유지', cls: '' };
+  if (rate <  15) return { label: '유지', cls: '' };
+  if (rate <  30) return { label: '일부 수익 실현', cls: 'badge-good' };
+  return                  { label: '수익 실현 권장', cls: 'badge-good' };
+}
+
+function renderStrategyCard(stocks, totRate, totValue) {
+  const ps = getPortfolioStrategy(totRate);
+
+  document.getElementById('strategy-portfolio').innerHTML = `
+    <div class="flex items-start gap-3 p-4 rounded-2xl bg-gray-50">
+      <span class="text-2xl leading-none mt-0.5">${ps.icon}</span>
+      <div>
+        <span class="badge ${ps.badge} mb-2">${ps.label}</span>
+        <p class="text-sm text-gray-600 leading-relaxed mt-1">${ps.msg}</p>
+      </div>
+    </div>`;
+
+  const actionable = stocks
+    .map(s => ({ ...s, action: getStockAction(s.rate) }))
+    .filter(s => s.rate <= -10 || s.rate >= 15)
+    .sort((a, b) => Math.abs(b.rate) - Math.abs(a.rate))
+    .slice(0, 5);
+
+  if (!actionable.length) {
+    document.getElementById('strategy-stocks').innerHTML =
+      '<p class="text-xs text-gray-400">개별 종목은 모두 안정적인 구간이에요.</p>';
+    return;
+  }
+
+  document.getElementById('strategy-stocks').innerHTML =
+    '<div class="text-xs font-semibold text-gray-400 mb-2">종목별 액션</div>' +
+    actionable.map(s => `
+      <div class="flex items-center justify-between py-1.5">
+        <span class="text-sm font-semibold text-gray-800">${s.name}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs ${s.rate >= 0 ? 'c-profit' : 'c-loss'} font-semibold">
+            ${s.rate >= 0 ? '+' : ''}${s.rate.toFixed(1)}%
+          </span>
+          <span class="badge ${s.action.cls}" style="font-size:11px;padding:3px 9px">${s.action.label}</span>
+        </div>
+      </div>`).join('');
 }
 
 /* ══════════════════════════════════════════
