@@ -7,6 +7,7 @@
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
 
@@ -120,11 +121,52 @@
 
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-thumb { background: #DDE1E7; border-radius: 6px; }
+
+    /* Dashboard grid */
+    .card { position: relative; }
+
+    #dashboard-grid, #history-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .col-span-1 { grid-column: span 1; }
+    .col-span-2 { grid-column: span 2; }
+    .col-span-3 { grid-column: span 3; }
+
+    /* Drag handle */
+    .drag-handle {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      cursor: grab;
+      color: #D1D5DB;
+      opacity: 0;
+      transition: opacity .15s;
+      padding: 2px;
+      border-radius: 6px;
+      line-height: 0;
+    }
+    .drag-handle:hover { background: #F0F1F5; color: #9CA3AF; }
+    .card:hover .drag-handle { opacity: 1; }
+
+    /* Sortable states */
+    .sortable-ghost {
+      opacity: 0.35;
+      background: #EEF4FF !important;
+      border: 2px dashed #3182F6;
+    }
+    .sortable-drag {
+      opacity: 1 !important;
+      box-shadow: 0 12px 36px rgba(49,130,246,.18) !important;
+      cursor: grabbing;
+    }
   </style>
 </head>
 <body class="min-h-screen">
 
-<div class="max-w-xl mx-auto px-4 py-10 space-y-4">
+<div class="max-w-6xl mx-auto px-6 py-10 space-y-4">
 
   <!-- ── Header ── -->
   <div class="mb-3">
@@ -167,16 +209,16 @@
   </div>
 
   <!-- ── Results ── -->
-  <div id="results" class="hidden space-y-4">
+  <div id="results" class="hidden">
 
     <!-- Date label -->
-    <div class="flex items-center gap-2 px-1">
+    <div class="flex items-center gap-2 px-1 mb-4">
       <div class="w-2 h-2 rounded-full bg-blue-500"></div>
       <span class="text-sm font-bold text-gray-600" id="result-date-label"></span>
     </div>
 
-    <!-- Summary cards -->
-    <div class="grid grid-cols-3 gap-3">
+    <!-- Summary cards (고정 상단 행) -->
+    <div class="grid grid-cols-3 gap-3 mb-4">
       <div class="card animate-slide-up" style="animation-delay:0s">
         <div class="text-xs text-gray-400 font-medium mb-1">총 평가금액</div>
         <div class="text-lg font-extrabold text-gray-900 leading-tight" id="s-total">—</div>
@@ -192,102 +234,120 @@
       </div>
     </div>
 
-    <!-- Comparison card (hidden until 2+ snapshots) -->
-    <div class="card animate-slide-up hidden" id="compare-card" style="animation-delay:.17s">
-      <div class="text-xs font-semibold text-gray-400 mb-2">전 기록 대비</div>
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-xs text-gray-400 mb-0.5">평가금액 변화</div>
-          <div class="text-base font-bold" id="cmp-value">—</div>
+    <!-- 드래그 가능한 대시보드 그리드 -->
+    <div id="dashboard-grid">
+
+      <!-- Comparison card -->
+      <div class="card animate-slide-up hidden col-span-2" id="compare-card" data-card-id="compare-card" style="animation-delay:.17s">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="text-xs font-semibold text-gray-400 mb-2">전 기록 대비</div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs text-gray-400 mb-0.5">평가금액 변화</div>
+            <div class="text-base font-bold" id="cmp-value">—</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-gray-400 mb-0.5">수익률 변화</div>
+            <div class="text-base font-bold" id="cmp-rate">—</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-gray-400 mb-0.5">비교 기준</div>
+            <div class="text-xs font-semibold text-gray-500" id="cmp-prev-date">—</div>
+          </div>
         </div>
-        <div class="text-center">
-          <div class="text-xs text-gray-400 mb-0.5">수익률 변화</div>
-          <div class="text-base font-bold" id="cmp-rate">—</div>
+      </div>
+
+      <!-- Goal progress card -->
+      <div class="card animate-slide-up hidden col-span-1" id="goal-card" data-card-id="goal-card" style="animation-delay:.21s">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-bold text-gray-900">목표 달성률</span>
+          <span class="text-sm font-bold" id="goal-pct-label">—</span>
         </div>
-        <div class="text-right">
-          <div class="text-xs text-gray-400 mb-0.5">비교 기준</div>
-          <div class="text-xs font-semibold text-gray-500" id="cmp-prev-date">—</div>
+        <div class="goal-track mb-2">
+          <div class="goal-fill" id="goal-bar" style="width:0%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400">
+          <span>현재 <span class="font-semibold text-gray-700" id="goal-current">—</span></span>
+          <span>목표 <span class="font-semibold text-gray-700" id="goal-target">—</span></span>
         </div>
       </div>
-    </div>
 
-    <!-- Goal progress card -->
-    <div class="card animate-slide-up hidden" id="goal-card" style="animation-delay:.21s">
-      <div class="flex items-center justify-between mb-3">
-        <span class="font-bold text-gray-900">목표 달성률</span>
-        <span class="text-sm font-bold" id="goal-pct-label">—</span>
+      <!-- Analysis -->
+      <div class="card animate-slide-up col-span-1" data-card-id="analysis-card" style="animation-delay:.2s">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="flex items-center justify-between mb-4">
+          <span class="font-bold text-gray-900">포트폴리오 진단</span>
+          <span class="badge badge-good" id="port-badge">양호</span>
+        </div>
+        <div id="warnings" class="space-y-2 mb-4 text-sm text-gray-600"></div>
+        <p id="main-comment" class="text-sm text-gray-400 leading-relaxed"></p>
       </div>
-      <div class="goal-track mb-2">
-        <div class="goal-fill" id="goal-bar" style="width:0%"></div>
+
+      <!-- Stock list -->
+      <div class="card animate-slide-up col-span-2" data-card-id="stock-list-card" style="animation-delay:.27s">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="font-bold text-gray-900 mb-1">종목 현황</div>
+        <div class="text-xs text-gray-400 mb-4" id="stock-meta"></div>
+        <div id="stock-list" class="divide-y divide-gray-50"></div>
       </div>
-      <div class="flex justify-between text-xs text-gray-400">
-        <span>현재 <span class="font-semibold text-gray-700" id="goal-current">—</span></span>
-        <span>목표 <span class="font-semibold text-gray-700" id="goal-target">—</span></span>
+
+      <!-- Allocation donut chart -->
+      <div class="card animate-slide-up col-span-1" id="allocation-card" data-card-id="allocation-card" style="animation-delay:.31s">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="font-bold text-gray-900 mb-4">비중 현황</div>
+        <div style="height:220px;position:relative"><canvas id="allocation-chart"></canvas></div>
       </div>
-    </div>
 
-    <!-- Analysis -->
-    <div class="card animate-slide-up" style="animation-delay:.2s">
-      <div class="flex items-center justify-between mb-4">
-        <span class="font-bold text-gray-900">포트폴리오 진단</span>
-        <span class="badge badge-good" id="port-badge">양호</span>
+      <!-- Per-stock bar chart -->
+      <div class="card animate-slide-up col-span-2" data-card-id="stock-chart-card" style="animation-delay:.34s">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="font-bold text-gray-900 mb-4">종목별 수익률</div>
+        <div style="height:220px"><canvas id="stock-chart"></canvas></div>
       </div>
-      <div id="warnings" class="space-y-2 mb-4 text-sm text-gray-600"></div>
-      <p id="main-comment" class="text-sm text-gray-400 leading-relaxed"></p>
-    </div>
 
-    <!-- Stock list -->
-    <div class="card animate-slide-up" style="animation-delay:.27s">
-      <div class="font-bold text-gray-900 mb-1">종목 현황</div>
-      <div class="text-xs text-gray-400 mb-4" id="stock-meta"></div>
-      <div id="stock-list" class="divide-y divide-gray-50"></div>
-    </div>
-
-    <!-- Allocation donut chart -->
-    <div class="card animate-slide-up" style="animation-delay:.31s" id="allocation-card">
-      <div class="font-bold text-gray-900 mb-4">비중 현황</div>
-      <div style="height:220px;position:relative"><canvas id="allocation-chart"></canvas></div>
-    </div>
-
-    <!-- Per-stock bar chart -->
-    <div class="card animate-slide-up" style="animation-delay:.34s">
-      <div class="font-bold text-gray-900 mb-4">종목별 수익률</div>
-      <div style="height:220px"><canvas id="stock-chart"></canvas></div>
     </div>
 
   </div>
 
   <!-- ── History Section ── -->
-  <div id="history-section" class="hidden space-y-4">
+  <div id="history-section" class="hidden">
 
-    <!-- Line chart -->
-    <div class="card animate-slide-up">
-      <div class="flex items-center justify-between mb-1">
-        <div class="font-bold text-gray-900">자산 변화</div>
-        <div class="text-xs text-gray-400" id="history-range"></div>
-      </div>
-      <p class="text-xs text-gray-400 mb-4">그래프 포인트를 클릭하면 해당 날짜 기록을 볼 수 있어요</p>
-      <div style="height:220px"><canvas id="history-chart"></canvas></div>
-    </div>
+    <div id="history-grid">
 
-    <!-- Snapshot list -->
-    <div class="card animate-slide-up">
-      <div class="font-bold text-gray-900 mb-3">저장된 기록</div>
-      <div id="snapshot-list" class="flex flex-wrap gap-2"></div>
-    </div>
-
-    <!-- Period summary card -->
-    <div class="card animate-slide-up hidden" id="period-summary-card">
-      <div class="flex items-center justify-between mb-4">
-        <span class="font-bold text-gray-900">기간별 수익률</span>
-        <div class="flex gap-1">
-          <button id="period-tab-week" onclick="switchPeriodTab('week')"
-            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition bg-blue-500 text-white">주간</button>
-          <button id="period-tab-month" onclick="switchPeriodTab('month')"
-            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition bg-gray-100 text-gray-500">월간</button>
+      <!-- Line chart -->
+      <div class="card animate-slide-up col-span-3" data-card-id="history-chart-card">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="flex items-center justify-between mb-1">
+          <div class="font-bold text-gray-900">자산 변화</div>
+          <div class="text-xs text-gray-400" id="history-range"></div>
         </div>
+        <p class="text-xs text-gray-400 mb-4">그래프 포인트를 클릭하면 해당 날짜 기록을 볼 수 있어요</p>
+        <div style="height:220px"><canvas id="history-chart"></canvas></div>
       </div>
-      <div id="period-list" class="space-y-1"></div>
+
+      <!-- Snapshot list -->
+      <div class="card animate-slide-up col-span-2" data-card-id="snapshot-list-card">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="font-bold text-gray-900 mb-3">저장된 기록</div>
+        <div id="snapshot-list" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Period summary card -->
+      <div class="card animate-slide-up hidden col-span-1" id="period-summary-card" data-card-id="period-summary-card">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="flex items-center justify-between mb-4">
+          <span class="font-bold text-gray-900">기간별 수익률</span>
+          <div class="flex gap-1">
+            <button id="period-tab-week" onclick="switchPeriodTab('week')"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold transition bg-blue-500 text-white">주간</button>
+            <button id="period-tab-month" onclick="switchPeriodTab('month')"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold transition bg-gray-100 text-gray-500">월간</button>
+          </div>
+        </div>
+        <div id="period-list" class="space-y-1"></div>
+      </div>
+
     </div>
 
   </div>
@@ -1258,6 +1318,52 @@ function renderPeriodList(snaps) {
 }
 
 /* ══════════════════════════════════════════
+   DASHBOARD LAYOUT — drag & persist
+══════════════════════════════════════════ */
+const LAYOUT_KEY = 'dashboard_layout_v1';
+
+function saveLayout(gridId) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  const order = [...grid.children]
+    .map(el => el.dataset.cardId)
+    .filter(Boolean);
+  const layouts = JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}');
+  layouts[gridId] = order;
+  localStorage.setItem(LAYOUT_KEY, JSON.stringify(layouts));
+}
+
+function loadLayout(gridId) {
+  const layouts = JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}');
+  const order = layouts[gridId];
+  if (!order || !order.length) return;
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  const cardMap = {};
+  [...grid.children].forEach(el => {
+    if (el.dataset.cardId) cardMap[el.dataset.cardId] = el;
+  });
+  order.forEach(id => {
+    if (cardMap[id]) grid.appendChild(cardMap[id]);
+  });
+}
+
+function initDashboard() {
+  ['dashboard-grid', 'history-grid'].forEach(gridId => {
+    loadLayout(gridId);
+    const el = document.getElementById(gridId);
+    if (!el || typeof Sortable === 'undefined') return;
+    Sortable.create(el, {
+      animation: 200,
+      ghostClass: 'sortable-ghost',
+      dragClass: 'sortable-drag',
+      handle: '.drag-handle',
+      onEnd: () => saveLayout(gridId),
+    });
+  });
+}
+
+/* ══════════════════════════════════════════
    ENTRY POINT
 ══════════════════════════════════════════ */
 function onAnalyze() {
@@ -1293,6 +1399,7 @@ document.getElementById('portfolio-input').addEventListener('keydown', e => {
 (function init() {
   document.getElementById('snapshot-date').value = todayStr();
   loadTargetRate();
+  initDashboard();
 
   /* Restore history if exists */
   const snaps = getSnapshots();
