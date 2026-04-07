@@ -233,6 +233,24 @@
     </button>
   </div>
 
+  <!-- ── Export Card ── -->
+  <div class="card" id="export-card" style="display:none">
+    <div class="font-bold text-gray-900 mb-3">데이터 내보내기</div>
+    <div class="flex gap-2">
+      <button onclick="exportCSV()"
+        class="flex-1 flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-700 hover:border-blue-400 hover:text-blue-500 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        CSV
+      </button>
+      <button onclick="exportJSON()"
+        class="flex-1 flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-700 hover:border-blue-400 hover:text-blue-500 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        JSON
+      </button>
+    </div>
+    <p class="text-xs text-gray-400 mt-2">저장된 전체 기록을 내보내요</p>
+  </div>
+
   </div><!-- /left-panel -->
 
   <!-- ── Right Panel ── -->
@@ -1160,6 +1178,7 @@ function renderHistorySection(activeDate) {
 
   const section = document.getElementById('history-section');
   section.classList.remove('hidden');
+  document.getElementById('export-card').style.display = '';
 
   renderHistoryChart(snaps, dates, activeDate);
   renderSnapshotList(snaps, activeDate);
@@ -1436,6 +1455,57 @@ function renderStrategyCard(stocks, totRate, totValue) {
           <span class="badge ${s.action.cls}" style="font-size:11px;padding:3px 9px">${s.action.label}</span>
         </div>
       </div>`).join('');
+}
+
+/* ══════════════════════════════════════════
+   EXPORT
+══════════════════════════════════════════ */
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportCSV() {
+  const snaps = getSnapshots();
+  const dates = Object.keys(snaps).sort();
+  if (!dates.length) { showToast('저장된 기록이 없어요'); return; }
+
+  const rows = [['날짜', '종목명', '평가금액', '수익률(%)', '평가손익', '매수평균가', '현재가', '수량', '비중(%)']];
+
+  dates.forEach(date => {
+    const snap = snaps[date];
+    const totVal = snap.header?.totalValue ?? snap.stocks.reduce((s, x) => s + x.value, 0);
+    snap.stocks.forEach(s => {
+      rows.push([
+        date,
+        s.name,
+        Math.round(s.value),
+        s.rate.toFixed(2),
+        Math.round(s.pnl),
+        Math.round(s.avg),
+        Math.round(s.cur),
+        s.qty,
+        totVal > 0 ? (s.value / totVal * 100).toFixed(1) : '0',
+      ]);
+    });
+  });
+
+  const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n'); // BOM for Excel 한글
+  downloadFile(csv, `portfolio_${dates[0]}_${dates[dates.length-1]}.csv`, 'text/csv;charset=utf-8');
+  showToast('CSV 다운로드 완료');
+}
+
+function exportJSON() {
+  const snaps = getSnapshots();
+  if (!Object.keys(snaps).length) { showToast('저장된 기록이 없어요'); return; }
+  const json = JSON.stringify(snaps, null, 2);
+  const today = new Date().toISOString().slice(0, 10);
+  downloadFile(json, `portfolio_backup_${today}.json`, 'application/json');
+  showToast('JSON 다운로드 완료');
 }
 
 /* ══════════════════════════════════════════
