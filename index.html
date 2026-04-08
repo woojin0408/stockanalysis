@@ -648,6 +648,11 @@ function loadSnapshot(date) {
   const snaps = getSnapshots();
   const snap  = snaps[date];
   if (!snap) return;
+  // AI 카드 초기화 (다른 스냅샷 로드 시 이전 AI 분석 숨김)
+  const aiCard = document.getElementById('ai-card');
+  if (aiCard) aiCard.classList.add('hidden');
+  const aiRow = document.getElementById('ai-analyze-row');
+  if (aiRow) aiRow.style.setProperty('display', 'none', 'important');
   render({ stocks: snap.stocks, header: snap.header }, date);
   renderSnapshotList(snaps, date);
   setTimeout(() => document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -1676,6 +1681,10 @@ function getApiKey() {
 
 function onSaveApiKey() {
   const val = document.getElementById('ai-key-input').value.trim();
+  if (!val) {
+    showToast('API 키를 입력해주세요');
+    return;
+  }
   if (!val.startsWith('sk-ant-')) {
     showToast('올바른 Claude API 키를 입력해주세요 (sk-ant- 로 시작)');
     return;
