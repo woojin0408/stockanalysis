@@ -725,6 +725,7 @@ function parseInput(raw) {
 let stockChartInst = null;
 let histChartInst  = null;
 let allocChartInst = null;
+let lastRenderData = null; // { stocks, header, totRate, totValue, date }
 
 /* ══════════════════════════════════════════
    STOCK MODAL — open / close
@@ -991,6 +992,7 @@ function render({ stocks, header }, date) {
     animateNumber(sPnl, totPnl, 900, v => (v >= 0 ? '+' : '') + formatKRW(v));
   }
 
+  lastRenderData = { stocks, header, totRate, totValue, date };
   renderAnalysis(stocks, totRate, totValue);
   renderStrategyCard(stocks, totRate, totValue);
   renderStocks(stocks, totValue);
@@ -998,6 +1000,10 @@ function render({ stocks, header }, date) {
   renderAllocationChart(stocks, totValue);
   renderCompareCard(date);
   renderGoalCard(totRate);
+
+  // AI 분석 버튼 노출
+  const aiRow = document.getElementById('ai-analyze-row');
+  if (aiRow) aiRow.style.removeProperty('display');
 }
 
 function renderCompareCard(currentDate) {
@@ -1778,6 +1784,92 @@ async function callClaudeApi(prompt) {
     }
   }
   throw lastErr || new Error('AI_CALL_FAILED');
+}
+
+/* ══════════════════════════════════════════
+   AI — RENDER
+══════════════════════════════════════════ */
+function renderAiCard(result, dateStr) {
+  const card    = document.getElementById('ai-card');
+  const loading = document.getElementById('ai-card-loading');
+  const content = document.getElementById('ai-card-content');
+
+  loading.classList.add('hidden');
+  content.classList.remove('hidden');
+  card.classList.remove('hidden');
+
+  // 날짜 레이블
+  document.getElementById('ai-card-date').textContent = dateStr ? formatDateKR(dateStr) + ' 기준' : '';
+
+  // 요약
+  document.getElementById('ai-summary').textContent = result.summary || '—';
+
+  // 리스크 점수
+  const score = typeof result.riskScore === 'number' ? result.riskScore : parseFloat(result.riskScore);
+  const clampedScore = isNaN(score) ? null : Math.min(10, Math.max(1, score));
+  document.getElementById('ai-risk-score').textContent = clampedScore !== null ? clampedScore.toFixed(1) : '—';
+  document.getElementById('ai-risk-reason').textContent = result.riskReason || '';
+  const ring = document.getElementById('ai-risk-ring');
+  ring.className = 'risk-score-ring ' + (clampedScore >= 7 ? 'risk-high' : clampedScore >= 4 ? 'risk-mid' : 'risk-low');
+
+  // 종목별
+  const stocksEl = document.getElementById('ai-stocks');
+  const actionClass = a => a === '매수' ? 'ai-action-buy' : a === '매도' ? 'ai-action-sell' : 'ai-action-hold';
+  stocksEl.innerHTML = (result.stocks || []).map(s => `
+    <div class="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
+      <span class="text-sm font-bold text-gray-900 w-24 shrink-0">${s.name}</span>
+      <span class="badge ${actionClass(s.action)} shrink-0" style="font-size:11px;padding:3px 10px">${s.action}</span>
+      <span class="text-sm text-gray-600 leading-snug">${s.comment}</span>
+    </div>`).join('');
+}
+
+async function onAiAnalyze() {
+  if (!getApiKey()) {
+    showToast('API 키를 먼저 입력해주세요');
+    document.getElementById('ai-key-input').focus();
+    return;
+  }
+  if (!lastRenderData) {
+    showToast('먼저 포트폴리오를 분석해주세요');
+    return;
+  }
+
+  const btn     = document.getElementById('ai-analyze-btn');
+  const refresh = document.getElementById('ai-card-refresh');
+  const card    = document.getElementById('ai-card');
+  const loading = document.getElementById('ai-card-loading');
+  const content = document.getElementById('ai-card-content');
+
+  // 버튼 비활성화
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 분석 중...'; }
+  if (refresh) refresh.style.pointerEvents = 'none';
+
+  // 카드 로딩 상태
+  card.classList.remove('hidden');
+  loading.classList.remove('hidden');
+  content.classList.add('hidden');
+
+  try {
+    const { stocks, header, totRate, totValue, date } = lastRenderData;
+    const prompt = buildAiPrompt(stocks, totRate, totValue);
+    const result = await callClaudeApi(prompt);
+    renderAiCard(result, date);
+    showToast('✨ AI 분석 완료');
+  } catch (e) {
+    card.classList.add('hidden');
+    loading.classList.add('hidden');
+    if (e.message === 'API_KEY_MISSING') {
+      showToast('API 키를 먼저 입력해주세요');
+    } else if (e.message === 'JSON_PARSE_FAIL') {
+      showToast('응답 형식 오류. 다시 시도해주세요');
+    } else {
+      showToast('AI 분석에 실패했어요. 잠시 후 다시 시도해주세요');
+      console.error('[AI]', e);
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span>✨</span> AI 분석하기'; }
+    if (refresh) refresh.style.pointerEvents = '';
+  }
 }
 
 /* ══════════════════════════════════════════
