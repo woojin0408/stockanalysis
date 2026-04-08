@@ -1660,6 +1660,38 @@ function initDashboard() {
 }
 
 /* ══════════════════════════════════════════
+   AI — API KEY
+══════════════════════════════════════════ */
+const AI_KEY_STORAGE = 'claude_api_key_v1';
+
+function getApiKey() {
+  return localStorage.getItem(AI_KEY_STORAGE) || '';
+}
+
+function onSaveApiKey() {
+  const val = document.getElementById('ai-key-input').value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    showToast('올바른 Claude API 키를 입력해주세요 (sk-ant- 로 시작)');
+    return;
+  }
+  localStorage.setItem(AI_KEY_STORAGE, val);
+  renderApiKeyStatus(true);
+  showToast('API 키가 저장됐어요');
+}
+
+function renderApiKeyStatus(saved) {
+  const statusEl = document.getElementById('ai-key-status');
+  const inputEl  = document.getElementById('ai-key-input');
+  if (saved) {
+    statusEl.innerHTML = '<span class="text-green-500 font-semibold">✓ 키 저장됨</span> · 개인 키는 이 기기에만 저장됩니다';
+    inputEl.placeholder = 'sk-ant-••••••••••••';
+    inputEl.value = '';
+  } else {
+    statusEl.textContent = '개인 키는 이 기기에만 저장됩니다';
+  }
+}
+
+/* ══════════════════════════════════════════
    ENTRY POINT
 ══════════════════════════════════════════ */
 function onAnalyze() {
@@ -1708,6 +1740,8 @@ document.getElementById('portfolio-input').addEventListener('keydown', e => {
     render({ stocks: snap.stocks, header: snap.header }, latest);
     renderSnapshotList(snaps, latest);
   }
+  /* Restore AI key status */
+  if (getApiKey()) renderApiKeyStatus(true);
 })();
 </script>
 </body>
