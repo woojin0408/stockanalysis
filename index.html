@@ -1873,8 +1873,14 @@ async function onAiAnalyze() {
     } else if (e.message === 'JSON_PARSE_FAIL') {
       showToast('응답 형식 오류. 다시 시도해주세요');
     } else {
-      const detail = e.message ? e.message.slice(0, 60) : '알 수 없는 오류';
-      showToast('AI 분석 실패: ' + detail);
+      const msg = e.message || '';
+      if (msg.includes('credit balance') || msg.includes('billing')) {
+        showToast('크레딧 부족 — console.anthropic.com에서 충전해주세요');
+      } else if (msg.includes('401') || msg.includes('authentication')) {
+        showToast('API 키가 올바르지 않아요. 다시 확인해주세요');
+      } else {
+        showToast('AI 분석 실패: ' + msg.slice(0, 50));
+      }
       console.error('[AI]', e);
     }
   } finally {
