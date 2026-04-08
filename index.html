@@ -1692,6 +1692,89 @@ function renderApiKeyStatus(saved) {
 }
 
 /* ══════════════════════════════════════════
+   AI — CLAUDE API CALL
+══════════════════════════════════════════ */
+function buildAiPrompt(stocks, header, totRate, totValue) {
+  const portfolioJson = JSON.stringify({
+    totalRate: +totRate.toFixed(2),
+    totalValue: Math.round(totValue),
+    stocks: stocks.map(s => ({
+      name: s.name,
+      rate: +s.rate.toFixed(2),
+      weight: +(s.value / totValue * 100).toFixed(1),
+      value: Math.round(s.value),
+      pnl: Math.round(s.pnl),
+    }))
+  }, null, 2);
+
+  return `당신은 투자 분석 어시스턴트입니다. 아래 포트폴리오를 분석하고 반드시 JSON 형식으로만 응답하세요. 설명 텍스트 없이 JSON만 출력하세요.
+
+포트폴리오 데이터:
+${portfolioJson}
+
+응답 JSON 형식 (이 구조를 정확히 따르세요):
+{
+  "summary": "포트폴리오 전체 상태를 한두 문장으로 요약 (한국어)",
+  "riskScore": 숫자(1.0~10.0, 소수점 한 자리),
+  "riskReason": "리스크 점수 근거 한 줄 (한국어)",
+  "stocks": [
+    { "name": "종목명 (데이터와 정확히 동일하게)", "action": "매수 또는 매도 또는 유지", "comment": "한줄 분석 (한국어)" }
+  ]
+}
+
+주의:
+- action 값은 반드시 "매수", "매도", "유지" 셋 중 하나만 사용
+- stocks 배열은 입력 종목 전체를 포함
+- JSON 외 텍스트 절대 금지`;
+}
+
+async function callClaudeApi(prompt) {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('API_KEY_MISSING');
+
+  const body = JSON.stringify({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }]
+  });
+
+  const targetUrl = 'https://api.anthropic.com/v1/messages';
+  const proxies = [
+    `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+  ];
+
+  let lastErr = null;
+  for (const proxyUrl of proxies) {
+    try {
+      const res = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body,
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errText.slice(0, 200)}`);
+      }
+      const data = await res.json();
+      const text = data.content?.[0]?.text || '';
+      // JSON 블록 추출 (마크다운 코드펜스 대응)
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('JSON_PARSE_FAIL');
+      return JSON.parse(match[0]);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('AI_CALL_FAILED');
+}
+
+/* ══════════════════════════════════════════
    ENTRY POINT
 ══════════════════════════════════════════ */
 function onAnalyze() {
