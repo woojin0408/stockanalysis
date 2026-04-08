@@ -1810,7 +1810,7 @@ function renderAiCard(result, dateStr) {
   document.getElementById('ai-risk-score').textContent = clampedScore !== null ? clampedScore.toFixed(1) : '—';
   document.getElementById('ai-risk-reason').textContent = result.riskReason || '';
   const ring = document.getElementById('ai-risk-ring');
-  ring.className = 'risk-score-ring ' + (clampedScore >= 7 ? 'risk-high' : clampedScore >= 4 ? 'risk-mid' : 'risk-low');
+  ring.className = 'risk-score-ring ' + (clampedScore === null ? '' : clampedScore >= 7 ? 'risk-high' : clampedScore >= 4 ? 'risk-mid' : 'risk-low');
 
   // 종목별
   const stocksEl = document.getElementById('ai-stocks');
@@ -1850,7 +1850,7 @@ async function onAiAnalyze() {
   content.classList.add('hidden');
 
   try {
-    const { stocks, header, totRate, totValue, date } = lastRenderData;
+    const { stocks, totRate, totValue, date } = lastRenderData;
     const prompt = buildAiPrompt(stocks, totRate, totValue);
     const result = await callClaudeApi(prompt);
     renderAiCard(result, date);
