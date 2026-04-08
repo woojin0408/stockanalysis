@@ -454,7 +454,7 @@
       <div class="card animate-slide-up col-span-1" id="allocation-card" data-card-id="allocation-card" style="animation-delay:.31s">
         <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
         <div class="font-bold text-gray-900 mb-4">비중 현황</div>
-        <div style="height:220px;position:relative"><canvas id="allocation-chart"></canvas></div>
+        <div style="height:280px;position:relative"><canvas id="allocation-chart"></canvas></div>
       </div>
 
       <!-- Per-stock bar chart -->
@@ -1258,12 +1258,12 @@ function renderAllocationChart(stocks, totValue) {
       plugins: {
         legend: {
           display: true,
-          position: 'right',
+          position: 'bottom',
           labels: {
-            font: { family: 'Pretendard', size: 12 },
+            font: { family: 'Pretendard', size: 11 },
             color: '#4B5563',
-            boxWidth: 12,
-            padding: 10,
+            boxWidth: 10,
+            padding: 8,
             usePointStyle: true,
           }
         },
@@ -1754,24 +1754,24 @@ async function callClaudeApi(prompt) {
   });
 
   const targetUrl = 'https://api.anthropic.com/v1/messages';
-  const proxies = [
-    `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': apiKey,
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true',
+  };
+
+  // 직접 호출 먼저 시도 (Anthropic 공식 브라우저 접근 지원)
+  // 실패 시 CORS 프록시 fallback
+  const attempts = [
+    () => fetch(targetUrl, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) }),
+    () => fetch(`https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) }),
   ];
 
   let lastErr = null;
-  for (const proxyUrl of proxies) {
+  for (const attempt of attempts) {
     try {
-      const res = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body,
-        signal: AbortSignal.timeout(30000),
-      });
+      const res = await attempt();
       if (!res.ok) {
         const errText = await res.text();
         throw new Error(`HTTP ${res.status}: ${errText.slice(0, 200)}`);
