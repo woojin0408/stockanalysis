@@ -1694,7 +1694,7 @@ function renderApiKeyStatus(saved) {
 /* ══════════════════════════════════════════
    AI — CLAUDE API CALL
 ══════════════════════════════════════════ */
-function buildAiPrompt(stocks, header, totRate, totValue) {
+function buildAiPrompt(stocks, totRate, totValue) {
   const portfolioJson = JSON.stringify({
     totalRate: +totRate.toFixed(2),
     totalValue: Math.round(totValue),
@@ -1766,8 +1766,14 @@ async function callClaudeApi(prompt) {
       // JSON 블록 추출 (마크다운 코드펜스 대응)
       const match = text.match(/\{[\s\S]*\}/);
       if (!match) throw new Error('JSON_PARSE_FAIL');
-      return JSON.parse(match[0]);
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        throw new Error('JSON_PARSE_FAIL');
+      }
     } catch (e) {
+      // Don't retry on app-level errors — only on network/proxy failures
+      if (e.message === 'JSON_PARSE_FAIL' || /^HTTP [45]/.test(e.message)) throw e;
       lastErr = e;
     }
   }
