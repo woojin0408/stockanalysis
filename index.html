@@ -235,14 +235,39 @@
       </div>
     </div>
 
+    <button id="toss-load-btn" onclick="loadFromToss()"
+      class="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-sm rounded-2xl px-4 py-3 mb-3 transition border border-blue-100">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      토스에서 불러오기
+    </button>
     <div class="text-xs text-gray-400 bg-gray-50 rounded-xl px-4 py-3 mb-3">
-      토스 앱 → 투자 탭 전체 복사 후 붙여넣기
+      또는 토스 앱 → 투자 탭 전체 복사 후 붙여넣기
     </div>
 
     <textarea
       id="portfolio-input" rows="12"
       class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-800 placeholder-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition mb-3"
       placeholder="토스 앱에서 복사한 데이터를 붙여넣으세요"></textarea>
+
+    <div class="flex items-center gap-2 mb-3">
+      <label class="text-xs font-semibold text-gray-500 whitespace-nowrap">보유 달러</label>
+      <div class="flex items-center gap-1 flex-1">
+        <span class="text-sm text-gray-400 font-medium">$</span>
+        <input type="number" id="cash-usd" min="0" step="0.01"
+          class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition"
+          placeholder="0" oninput="saveCashInput()" />
+      </div>
+      <label class="text-xs font-semibold text-gray-500 whitespace-nowrap">환율</label>
+      <div class="flex items-center gap-1">
+        <input type="number" id="cash-rate" min="0" step="1"
+          class="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition"
+          placeholder="1350" oninput="saveCashInput()" />
+        <span class="text-xs text-gray-400">₩</span>
+        <button onclick="fetchExchangeRate()" id="rate-refresh-btn"
+          class="text-xs text-blue-400 hover:text-blue-600 transition px-1" title="현재 환율 가져오기">↻</button>
+      </div>
+      <span id="rate-updated" class="text-xs text-gray-300"></span>
+    </div>
 
     <div class="flex items-center gap-3 mb-3">
       <label class="text-xs font-semibold text-gray-500 whitespace-nowrap">목표 수익률</label>
@@ -303,6 +328,10 @@
 
     <!-- AI 분석 버튼 -->
     <div class="flex justify-end gap-2 mb-2" id="ai-analyze-row" style="display:none!important">
+      <button onclick="showPasteModal()" id="ai-paste-btn"
+        class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-2xl text-sm font-bold hover:border-green-400 hover:text-green-600 transition shadow-sm">
+        <span>📥</span> 결과 붙여넣기
+      </button>
       <button onclick="onCopyAiPrompt()" id="ai-copy-btn"
         class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-2xl text-sm font-bold hover:border-blue-400 hover:text-blue-500 transition shadow-sm">
         <span>📋</span> claude.ai로 분석
@@ -322,16 +351,17 @@
     <!-- Summary cards (고정 상단 행) -->
     <div class="grid grid-cols-3 gap-3 mb-4">
       <div class="card animate-slide-up" style="animation-delay:0s">
-        <div class="text-xs text-gray-400 font-medium mb-1">총 평가금액</div>
+        <div class="text-xs text-gray-400 font-medium mb-1">총 자산</div>
         <div class="text-lg font-extrabold text-gray-900 leading-tight" id="s-total">—</div>
+        <div class="text-xs text-gray-400 mt-1 leading-relaxed hidden" id="s-asset-breakdown"></div>
       </div>
       <div class="card animate-slide-up" style="animation-delay:.07s">
-        <div class="text-xs text-gray-400 font-medium mb-1">총 수익률</div>
+        <div class="text-xs text-gray-400 font-medium mb-1">수익률 <span class="text-gray-300">(주식)</span></div>
         <div class="text-lg font-extrabold leading-tight" id="s-rate">—</div>
         <div class="text-xs font-semibold mt-0.5 leading-tight" id="s-profit">—</div>
       </div>
       <div class="card animate-slide-up" style="animation-delay:.14s">
-        <div class="text-xs text-gray-400 font-medium mb-1" id="s-pnl-label">평가손익</div>
+        <div class="text-xs text-gray-400 font-medium mb-1" id="s-pnl-label">평가손익 <span class="text-gray-300">(주식)</span></div>
         <div class="text-lg font-extrabold leading-tight" id="s-pnl">—</div>
       </div>
     </div>
@@ -422,6 +452,22 @@
           <span>현재 <span class="font-semibold text-gray-700" id="goal-current">—</span></span>
           <span>목표 <span class="font-semibold text-gray-700" id="goal-target">—</span></span>
         </div>
+      </div>
+
+      <!-- Paste Analysis Result Card -->
+      <div class="card animate-slide-up col-span-3 hidden" id="paste-result-card" data-card-id="paste-result-card">
+        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
+        <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🌐</span>
+            <div>
+              <div class="font-bold text-gray-900">AI 포트폴리오 진단</div>
+              <div class="text-xs text-gray-400" id="paste-date-label"></div>
+            </div>
+          </div>
+          <button onclick="showPasteModal()" class="text-xs text-gray-400 hover:text-blue-500 transition px-2 py-1 rounded-lg hover:bg-blue-50">↻ 다시 입력</button>
+        </div>
+        <div id="paste-result-content"></div>
       </div>
 
       <!-- Analysis -->
@@ -517,6 +563,28 @@
   </div><!-- /right-panel -->
 </div><!-- /app-layout -->
 </div><!-- /container -->
+
+<!-- ── Paste Analysis Modal ── -->
+<div id="paste-modal" class="fixed inset-0 z-50 hidden" onclick="closePasteModal(event)">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[88vh] overflow-y-auto"
+       style="padding: 28px 20px 40px;" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="font-bold text-gray-900 text-lg">분석 결과 붙여넣기</div>
+        <div class="text-xs text-gray-400 mt-0.5">claude.ai 분석 결과를 그대로 붙여넣으세요</div>
+      </div>
+      <button onclick="closePasteModal()" class="text-gray-400 hover:text-gray-700 text-xl font-bold p-2">✕</button>
+    </div>
+    <textarea id="paste-input" rows="12"
+      class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 placeholder-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-400 outline-none transition mb-3"
+      placeholder="claude.ai에서 받은 포트폴리오 분석 결과를 여기에 붙여넣으세요..."></textarea>
+    <button onclick="onSubmitPaste()"
+      class="w-full py-3 bg-green-500 text-white rounded-2xl text-sm font-bold hover:bg-green-600 transition">
+      분석 결과 적용
+    </button>
+  </div>
+</div>
 
 <!-- ── Stock Detail Modal ── -->
 <div id="stock-modal" class="fixed inset-0 z-50 hidden" onclick="closeStockModal(event)">
@@ -972,6 +1040,10 @@ function render({ stocks, header }, date) {
   const totRate     = header?.totalRate     ?? ((totValue - totInvested) / totInvested * 100);
   const dailyPnl    = header?.dailyPnl      ?? null;
 
+  const cashKRW     = getCashKRW();
+  const cashUSD     = parseFloat(document.getElementById('cash-usd').value)  || 0;
+  const totValueAll = totValue + cashKRW; // 주식 + 달러 현금
+
   const section = document.getElementById('results');
   section.classList.remove('hidden');
   section.querySelectorAll('.card').forEach(triggerAnimation);
@@ -987,9 +1059,17 @@ function render({ stocks, header }, date) {
   const sProfit = document.getElementById('s-profit');
   sRate.className = 'text-lg font-extrabold leading-tight ' + (totRate >= 0 ? 'c-profit' : 'c-loss');
   sProfit.className = 'text-xs font-semibold mt-0.5 leading-tight ' + (totPnl >= 0 ? 'c-profit' : 'c-loss');
-  animateNumber(document.getElementById('s-total'), totValue, 900, v => formatKRW(v));
+  animateNumber(document.getElementById('s-total'), totValueAll, 900, v => formatKRW(v));
   animateNumber(sRate, totRate, 900, v => pctFmt(v));
   animateNumber(sProfit, totPnl, 900, v => (v >= 0 ? '+' : '') + formatKRW(v));
+
+  const breakdown = document.getElementById('s-asset-breakdown');
+  if (cashKRW > 0) {
+    breakdown.classList.remove('hidden');
+    breakdown.innerHTML = `주식 ${formatKRW(totValue)}<br>현금 $${cashUSD.toLocaleString()} <span class="text-gray-300">(≈${formatKRW(cashKRW)})</span>`;
+  } else {
+    breakdown.classList.add('hidden');
+  }
 
   if (dailyPnl !== null) {
     sPnlLabel.textContent = '일간 수익';
@@ -1001,12 +1081,12 @@ function render({ stocks, header }, date) {
     animateNumber(sPnl, totPnl, 900, v => (v >= 0 ? '+' : '') + formatKRW(v));
   }
 
-  lastRenderData = { stocks, header, totRate, totValue, date };
+  lastRenderData = { stocks, header, totRate, totValue, totValueAll, cashKRW, cashUSD, date };
   renderAnalysis(stocks, totRate, totValue);
   renderStrategyCard(stocks, totRate, totValue);
-  renderStocks(stocks, totValue);
+  renderStocks(stocks, totValue, cashKRW, cashUSD, totValueAll);
   renderStockChart(stocks);
-  renderAllocationChart(stocks, totValue);
+  renderAllocationChart(stocks, totValue, cashKRW);
   renderCompareCard(date);
   renderGoalCard(totRate);
 
@@ -1050,6 +1130,8 @@ function renderCompareCard(currentDate) {
 }
 
 const GOAL_KEY = 'portfolio_target_rate_v1';
+const CASH_USD_KEY  = 'portfolio_cash_usd_v1';
+const CASH_RATE_KEY = 'portfolio_cash_rate_v1';
 
 function saveTargetRate() {
   const v = document.getElementById('target-rate').value;
@@ -1059,6 +1141,49 @@ function saveTargetRate() {
 function loadTargetRate() {
   const v = localStorage.getItem(GOAL_KEY);
   if (v !== null) document.getElementById('target-rate').value = v;
+}
+
+function saveCashInput() {
+  localStorage.setItem(CASH_USD_KEY,  document.getElementById('cash-usd').value);
+  localStorage.setItem(CASH_RATE_KEY, document.getElementById('cash-rate').value);
+}
+
+function loadCashInput() {
+  const usd  = localStorage.getItem(CASH_USD_KEY);
+  const rate = localStorage.getItem(CASH_RATE_KEY);
+  if (usd  !== null) document.getElementById('cash-usd').value  = usd;
+  if (rate !== null) document.getElementById('cash-rate').value = rate;
+}
+
+async function fetchExchangeRate() {
+  const btn = document.getElementById('rate-refresh-btn');
+  const label = document.getElementById('rate-updated');
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', {
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const rate = Math.round(data.rates?.KRW);
+    if (!rate) throw new Error('KRW not found');
+    document.getElementById('cash-rate').value = rate;
+    saveCashInput();
+    const dateStr = data.time_last_update_utc
+      ? new Date(data.time_last_update_utc).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) + ' 기준'
+      : '최신 기준';
+    if (label) label.textContent = dateStr;
+  } catch (e) {
+    showToast('환율 조회 실패 — 직접 입력해주세요');
+  } finally {
+    if (btn) { btn.textContent = '↻'; btn.disabled = false; }
+  }
+}
+
+function getCashKRW() {
+  const usd  = parseFloat(document.getElementById('cash-usd').value)  || 0;
+  const rate = parseFloat(document.getElementById('cash-rate').value) || 0;
+  return usd * rate;
 }
 
 function renderGoalCard(totRate) {
@@ -1132,15 +1257,16 @@ function renderAnalysis(stocks, totRate, totValue) {
   warnEl.innerHTML = warns.map(w => `<div class="flex items-start gap-2">${w}</div>`).join('');
 }
 
-function renderStocks(stocks, totValue) {
+function renderStocks(stocks, totValue, cashKRW = 0, cashUSD = 0, totValueAll = 0) {
   const meta   = document.getElementById('stock-meta');
   const listEl = document.getElementById('stock-list');
   const sorted = [...stocks].sort((a, b) => b.value - a.value);
   const hasDailyData = sorted.some(s => s.dailyPnl !== null);
-  meta.textContent = `총 ${sorted.length}개 종목`;
+  const baseTotal = totValueAll || totValue;
+  meta.textContent = `총 ${sorted.length}개 종목` + (cashKRW > 0 ? ' + 달러 현금' : '');
 
   listEl.innerHTML = sorted.map(s => {
-    const w   = (s.value / totValue * 100).toFixed(1);
+    const w   = (s.value / baseTotal * 100).toFixed(1);
     const cls = s.rate > 0 ? 'c-profit' : s.rate < 0 ? 'c-loss' : 'c-neutral';
     const bar = Math.min(Math.abs(s.rate) * 2.5, 100).toFixed(1);
     const bc  = s.rate >= 0 ? '#16B364' : '#F04438';
@@ -1184,6 +1310,32 @@ function renderStocks(stocks, totValue) {
       </div>`;
   }).join('');
 
+  if (cashKRW > 0) {
+    const cashW = (cashKRW / baseTotal * 100).toFixed(1);
+    listEl.innerHTML += `
+      <div class="stock-row" style="border-top: 1px dashed #E5E7EB; margin-top:4px; padding-top:16px;">
+        <div class="flex items-start justify-between mb-2">
+          <div class="flex-1 min-w-0">
+            <div>
+              <span class="font-semibold text-gray-900 text-sm">달러 현금</span>
+              <span class="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 ml-1.5 font-medium">USD</span>
+              <span class="text-xs text-gray-500 ml-1">${cashW}%</span>
+            </div>
+            <div class="flex items-baseline gap-2 mt-1.5">
+              <span class="text-base font-extrabold text-gray-500">$${cashUSD.toLocaleString()}</span>
+            </div>
+          </div>
+          <div class="text-right ml-4 shrink-0">
+            <div class="text-xs text-gray-400 mb-0.5">원화 환산</div>
+            <div class="text-sm font-bold text-gray-900">${formatKRW(cashKRW)}</div>
+          </div>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:0%;background:#94A3B8" data-w="${cashW}"></div>
+        </div>
+      </div>`;
+  }
+
   requestAnimationFrame(() =>
     listEl.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.w + '%'; })
   );
@@ -1226,11 +1378,12 @@ function renderStockChart(stocks) {
   });
 }
 
-function renderAllocationChart(stocks, totValue) {
+function renderAllocationChart(stocks, totValue, cashKRW = 0) {
   const ctx = document.getElementById('allocation-chart').getContext('2d');
   if (allocChartInst) { allocChartInst.destroy(); allocChartInst = null; }
 
-  if (!totValue || totValue <= 0 || !stocks.length) {
+  const totValueAll = totValue + cashKRW;
+  if (!totValueAll || totValueAll <= 0 || !stocks.length) {
     document.getElementById('allocation-card').classList.add('hidden');
     return;
   }
@@ -1242,13 +1395,23 @@ function renderAllocationChart(stocks, totValue) {
     '#06B6D4','#EC4899','#84CC16','#F97316','#64748B'
   ];
 
+  const labels = sorted.map(s => s.name);
+  const data   = sorted.map(s => +(s.value / totValueAll * 100).toFixed(1));
+  const colors = sorted.map((_, i) => COLORS[i % COLORS.length]);
+
+  if (cashKRW > 0) {
+    labels.push('달러 현금');
+    data.push(+(cashKRW / totValueAll * 100).toFixed(1));
+    colors.push('#94A3B8');
+  }
+
   allocChartInst = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: sorted.map(s => s.name),
+      labels,
       datasets: [{
-        data: sorted.map(s => +(s.value / totValue * 100).toFixed(1)),
-        backgroundColor: sorted.map((_, i) => COLORS[i % COLORS.length]),
+        data,
+        backgroundColor: colors,
         borderColor: '#fff',
         borderWidth: 2,
         hoverOffset: 8,
@@ -1895,28 +2058,49 @@ async function onAiAnalyze() {
 
 function onCopyAiPrompt() {
   if (!lastRenderData) { showToast('먼저 포트폴리오를 분석해주세요'); return; }
-  const { stocks, totRate, totValue } = lastRenderData;
+  const { stocks, totRate, totValue, totValueAll, cashKRW, cashUSD } = lastRenderData;
 
+  const tickerMap = getTickerMap();
   const stockLines = stocks.map(s => {
-    const w = (s.value / totValue * 100).toFixed(1);
-    return `- ${s.name}: 수익률 ${s.rate >= 0 ? '+' : ''}${s.rate.toFixed(2)}%, 비중 ${w}%, 평가금 ${formatKRW(s.value)} (손익 ${s.pnl >= 0 ? '+' : ''}${formatKRW(s.pnl)})`;
+    const w      = (s.value / (totValueAll || totValue) * 100).toFixed(1);
+    const ticker = tickerMap[s.name] ? ` (${tickerMap[s.name]})` : '';
+    return `- ${s.name}${ticker}: 수익률 ${s.rate >= 0 ? '+' : ''}${s.rate.toFixed(2)}%, 비중 ${w}%, 평가금 ${formatKRW(s.value)} (손익 ${s.pnl >= 0 ? '+' : ''}${formatKRW(s.pnl)})`;
   }).join('\n');
 
-  const prompt = `아래는 나의 투자 포트폴리오야. 분석해줘.
+  const tickerList = stocks
+    .map(s => tickerMap[s.name])
+    .filter(Boolean)
+    .join(', ');
 
-## 포트폴리오 현황
-- 총 수익률: ${totRate >= 0 ? '+' : ''}${totRate.toFixed(2)}%
-- 총 평가금: ${formatKRW(totValue)}
+  const cashLine = cashKRW > 0
+    ? `\n- 달러 현금: $${cashUSD.toLocaleString()} (≈ ${formatKRW(cashKRW)}), 비중 ${(cashKRW / (totValueAll || totValue) * 100).toFixed(1)}%`
+    : '';
+
+  const searchInstruction = tickerList
+    ? `## 분석 전 반드시 할 것 (웹 검색 사용)
+아래 종목들에 대해 분석 전에 다음을 검색해줘:
+1. 각 종목의 **현재 주가** 및 **최근 등락률** (${tickerList})
+2. 각 종목의 **최근 1~2주 주요 뉴스** (실적 발표, 계약, 이슈 등)
+3. **미국 시장 전반 분위기** (금리, 지수 흐름 등 최근 동향)
+
+검색 결과를 바탕으로 아래 포트폴리오 데이터와 함께 분석해줘.
+
+`
+    : '';
+
+  const prompt = `${searchInstruction}포트폴리오 봐줘.
+
+## 포트폴리오 현황 (${lastRenderData.date || '오늘'} 기준 내 매수 데이터)
+- 총 수익률 (주식): ${totRate >= 0 ? '+' : ''}${totRate.toFixed(2)}%
+- 주식 평가금: ${formatKRW(totValue)}
+- 총 자산 (현금 포함): ${formatKRW(totValueAll || totValue)}
 
 ## 종목 리스트
-${stockLines}
+${stockLines}${cashLine}
 
-## 요청 사항
-아래 4가지를 분석해줘:
-1. **오늘 요약** — 포트폴리오 전체 상태 한두 문장
-2. **리스크 점수** — 1~10점으로 평가하고 이유 한 줄
-3. **종목별 분석** — 각 종목에 매수/매도/유지 중 하나와 한줄 코멘트
-4. **개선 제안** — 구체적인 액션 아이템`;
+## 요청
+검색한 현재 시세·뉴스와 내 매수 데이터를 함께 고려해서 포트폴리오 진단 포맷에 맞춰 분석해줘.
+각 종목별로 📌 한줄 결론과 🎯 액션 제안(단기/중기)도 포함해줘.`;
 
   navigator.clipboard.writeText(prompt).then(() => {
     showToast('✅ 프롬프트 복사 완료 — claude.ai에 붙여넣기 하세요');
@@ -1930,6 +2114,243 @@ ${stockLines}
     document.body.removeChild(ta);
     showToast('✅ 프롬프트 복사 완료 — claude.ai에 붙여넣기 하세요');
   });
+}
+
+/* ══════════════════════════════════════════
+   PASTE ANALYSIS
+══════════════════════════════════════════ */
+function showPasteModal() {
+  const modal = document.getElementById('paste-modal');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('paste-input').focus(), 100);
+}
+
+function closePasteModal(e) {
+  if (e && e.target !== document.getElementById('paste-modal')) return;
+  document.getElementById('paste-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function onSubmitPaste() {
+  const text = document.getElementById('paste-input').value.trim();
+  if (!text) { showToast('분석 결과를 붙여넣어 주세요'); return; }
+  const data = parseClaudeAnalysis(text);
+  renderPasteCard(data);
+  document.getElementById('paste-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+  showToast('✅ 분석 결과 적용됨');
+}
+
+function parseClaudeAnalysis(text) {
+  const result = { date: '', market: '', overall: '', risk: '', rebalancing: '', stocks: [] };
+
+  const dateMatch = text.match(/\d{4}-\d{2}-\d{2}/);
+  if (dateMatch) result.date = dateMatch[0];
+
+  const sec = (emoji, next) => {
+    const re = new RegExp(emoji + '[^\n]*\n+([\\s\\S]*?)(?=' + next + '|$)');
+    const m = text.match(re);
+    return m ? m[1].replace(/^---+\s*/gm, '').trim() : '';
+  };
+
+  result.market      = sec('🌐', '(?:---|🔍|🚨|💡|⭐)');
+  result.overall     = sec('🔍', '(?:---|🚨|💡|⭐)');
+  result.risk        = sec('🚨', '(?:---|💡|⭐)');
+  result.rebalancing = sec('💡', '(?:---|⭐)');
+
+  // Extract per-stock blocks under ⭐ 종목별 분석
+  const stocksSection = text.match(/⭐[^\n]*\n+([\s\S]*?)(?=\n▎|\n⚠️ 위 분석|$)/);
+  if (stocksSection) {
+    const blocks = stocksSection[1].split(/\n---+\n/).map(b => b.trim()).filter(Boolean);
+    for (const block of blocks) {
+      const lines = block.split('\n');
+      // Header: "RKLB — 로켓 랩 | 현재가 ~$70"  or  "RKLB — 로켓 랩"
+      const hm = lines[0].match(/^([A-Z0-9]+)\s*[—–\-]+\s*([^|]+?)(?:\s*\|\s*(.+))?$/);
+      if (!hm) continue;
+      const ticker    = hm[1].trim();
+      const name      = hm[2].trim();
+      const priceInfo = (hm[3] || '').trim();
+
+      const conclusion = (block.match(/📌[^\n]*\n+→\s*(.+)/) || [])[1]?.trim() || '';
+      const newsM = block.match(/주요 뉴스\s*\n+([\s\S]*?)(?=\n🎯|$)/);
+      const news  = newsM ? newsM[1].trim() : '';
+      const actionM = block.match(/🎯[^\n]*\n+([\s\S]*?)$/);
+      const action  = actionM ? actionM[1].trim() : '';
+
+      result.stocks.push({ ticker, name, priceInfo, conclusion, news, action });
+    }
+  }
+  return result;
+}
+
+function renderPasteCard(data) {
+  const card    = document.getElementById('paste-result-card');
+  const content = document.getElementById('paste-result-content');
+  const dateEl  = document.getElementById('paste-date-label');
+
+  dateEl.textContent = data.date ? data.date + ' 기준 (실시간 시세·뉴스 반영)' : '실시간 시세·뉴스 반영';
+  card.classList.remove('hidden');
+
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const md2html = s => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^([-•]\s.+)$/gm, '<li class="ml-3">$1</li>')
+    .replace(/^(\d+\.\s.+)$/gm, '<li class="ml-3">$1</li>')
+    .replace(/✅/g, '<span class="text-green-500">✅</span>')
+    .replace(/⚠️/g, '<span class="text-amber-500">⚠️</span>')
+    .replace(/📈/g, '<span class="text-blue-500">📈</span>')
+    .replace(/\n/g, '<br>');
+
+  // Risk score extraction
+  const riskScoreM = data.risk.match(/리스크 점수[^0-9]*([0-9]+)\s*[\/\s]\s*10/);
+  const riskScore  = riskScoreM ? parseInt(riskScoreM[1]) : null;
+  const riskColor  = riskScore === null ? 'gray' : riskScore >= 7 ? 'red' : riskScore >= 4 ? 'amber' : 'green';
+  const riskBadge  = riskScore !== null
+    ? `<span class="badge badge-${riskColor === 'red' ? 'danger' : riskColor === 'amber' ? 'warning' : 'good'} ml-2">${riskScore}/10</span>`
+    : '';
+
+  // Summary sections
+  const summaryHtml = `
+    <div class="grid grid-cols-1 gap-3 mb-5">
+      ${data.overall ? `
+      <div class="bg-blue-50 rounded-2xl px-4 py-3">
+        <div class="text-xs font-semibold text-blue-400 mb-1">🔍 종합 평가</div>
+        <div class="text-sm text-gray-700 leading-relaxed">${md2html(data.overall)}</div>
+      </div>` : ''}
+      ${data.risk ? `
+      <div class="bg-red-50 rounded-2xl px-4 py-3">
+        <div class="flex items-center text-xs font-semibold text-red-400 mb-1">🚨 리스크 경고${riskBadge}</div>
+        <div class="text-sm text-gray-700 leading-relaxed">${md2html(data.risk)}</div>
+      </div>` : ''}
+      ${data.rebalancing ? `
+      <div class="bg-green-50 rounded-2xl px-4 py-3">
+        <div class="text-xs font-semibold text-green-500 mb-1">💡 리밸런싱 제안</div>
+        <div class="text-sm text-gray-700 leading-relaxed">${md2html(data.rebalancing)}</div>
+      </div>` : ''}
+      ${data.market ? `
+      <details class="bg-gray-50 rounded-2xl px-4 py-3">
+        <summary class="text-xs font-semibold text-gray-400 cursor-pointer select-none">🌐 시장 환경 요약 펼치기</summary>
+        <div class="text-sm text-gray-600 leading-relaxed mt-2">${md2html(data.market)}</div>
+      </details>` : ''}
+    </div>`;
+
+  // Per-stock rows
+  const stocksHtml = data.stocks.length ? `
+    <div class="text-xs font-semibold text-gray-500 mb-2">⭐ 종목별 분석 (클릭해서 펼치기)</div>
+    <div class="space-y-2">
+    ${data.stocks.map((s, i) => {
+      const actionColor = s.conclusion.includes('매도') ? 'c-loss' : s.conclusion.includes('익절') ? 'c-loss' : 'c-profit';
+      return `
+      <details class="bg-gray-50 rounded-2xl overflow-hidden">
+        <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-gray-100 transition">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-gray-400 bg-white px-2 py-0.5 rounded-lg border border-gray-200">${esc(s.ticker)}</span>
+            <span class="text-sm font-semibold text-gray-800">${esc(s.name)}</span>
+            ${s.priceInfo ? `<span class="text-xs text-gray-400">${esc(s.priceInfo)}</span>` : ''}
+          </div>
+          <span class="text-xs text-gray-400">▾</span>
+        </summary>
+        <div class="px-4 pb-4 pt-1 space-y-3">
+          ${s.conclusion ? `
+          <div class="bg-white rounded-xl px-3 py-2.5">
+            <div class="text-xs font-semibold text-gray-400 mb-1">📌 한줄 결론</div>
+            <div class="text-sm text-gray-700 leading-relaxed">→ ${md2html(s.conclusion)}</div>
+          </div>` : ''}
+          ${s.news ? `
+          <div>
+            <div class="text-xs font-semibold text-gray-400 mb-1.5">📰 주요 뉴스</div>
+            <div class="text-sm text-gray-700 leading-relaxed space-y-0.5">${md2html(s.news)}</div>
+          </div>` : ''}
+          ${s.action ? `
+          <div class="bg-white rounded-xl px-3 py-2.5">
+            <div class="text-xs font-semibold text-gray-400 mb-1">🎯 액션 제안</div>
+            <div class="text-sm text-gray-700 leading-relaxed">${md2html(s.action)}</div>
+          </div>` : ''}
+        </div>
+      </details>`;
+    }).join('')}
+    </div>` : '';
+
+  content.innerHTML = summaryHtml + stocksHtml;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ══════════════════════════════════════════
+   TOSSCTL 연동
+══════════════════════════════════════════ */
+async function loadFromToss() {
+  const btn = document.getElementById('toss-load-btn');
+  const date = document.getElementById('snapshot-date').value;
+  if (!date) { alert('날짜를 선택해주세요.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-color:rgba(49,130,246,.3);border-top-color:#3182F6"></span> 불러오는 중...';
+
+  try {
+    const res = await fetch('/api/portfolio');
+    if (res.status === 401) {
+      showToast('토스 로그인이 필요해요 — 터미널에서 tossctl auth login 실행 후 다시 시도하세요');
+      return;
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      showToast('불러오기 실패: ' + (body.error || res.statusText));
+      return;
+    }
+
+    const { positions, summary } = await res.json();
+    if (!positions || positions.length === 0) {
+      showToast('보유 종목이 없어요');
+      return;
+    }
+
+    /* 티커 맵 자동 등록 */
+    const tickerMap = getTickerMap();
+    positions.forEach(p => {
+      if (p.symbol && p.name && !tickerMap[p.name]) {
+        tickerMap[p.name] = p.symbol;
+      }
+    });
+    localStorage.setItem(TICKER_MAP_KEY, JSON.stringify(tickerMap));
+
+    /* tossctl → 내부 stocks 포맷 변환 */
+    const stocks = positions.map(p => ({
+      name:      p.name,
+      rate:      p.profit_rate * 100,
+      pnl:       p.unrealized_pnl,
+      avg:       p.average_price,
+      cur:       p.current_price,
+      qty:       p.quantity,
+      value:     p.market_value,
+      invested:  p.market_value - p.unrealized_pnl,
+      dailyRate: p.daily_profit_rate * 100,
+      dailyPnl:  p.daily_profit_loss,
+    }));
+
+    const totalInvested = stocks.reduce((s, st) => s + st.invested, 0);
+    const dailyPnl      = stocks.reduce((s, st) => s + (st.dailyPnl || 0), 0);
+    const header = {
+      totalValue:    summary.total_asset_amount,
+      totalInvested,
+      totalPnl:      summary.evaluated_profit_amount,
+      totalRate:     summary.profit_rate * 100,
+      dailyPnl,
+      dailyRate:     totalInvested > 0 ? (dailyPnl / totalInvested) * 100 : 0,
+    };
+
+    const data = { stocks, header };
+    saveSnapshot(date, data);
+    render(data, date);
+    renderHistorySection(date);
+    showToast(`✓ 토스 포트폴리오 ${stocks.length}개 종목 로드 완료`);
+
+  } catch (err) {
+    showToast('서버에 연결할 수 없어요 — npm start로 서버를 먼저 실행해주세요');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 토스에서 불러오기';
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -1968,6 +2389,8 @@ document.getElementById('portfolio-input').addEventListener('keydown', e => {
 (function init() {
   document.getElementById('snapshot-date').value = todayStr();
   loadTargetRate();
+  loadCashInput();
+  fetchExchangeRate();
   initDashboard();
 
   /* Restore history if exists */
