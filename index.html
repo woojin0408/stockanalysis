@@ -2329,9 +2329,10 @@ async function loadFromToss() {
     }));
 
     const totalInvested = stocks.reduce((s, st) => s + st.invested, 0);
+    const totalStockValue = stocks.reduce((s, st) => s + st.value, 0);
     const dailyPnl      = stocks.reduce((s, st) => s + (st.dailyPnl || 0), 0);
     const header = {
-      totalValue:    summary.total_asset_amount,
+      totalValue:    totalStockValue, // 주식 평가금만 (현금은 cash-usd 입력값으로 별도 합산)
       totalInvested,
       totalPnl:      summary.evaluated_profit_amount,
       totalRate:     summary.profit_rate * 100,
