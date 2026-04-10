@@ -2340,11 +2340,21 @@ async function loadFromToss() {
       dailyRate:     totalInvested > 0 ? (dailyPnl / totalInvested) * 100 : 0,
     };
 
+    /* 현금(달러) 자동 채우기 */
+    const cashUsd = summary.orderable_amount_usd ?? 0;
+    const cashKrw = summary.markets?.us?.orderable_amount_krw ?? 0;
+    const rate    = cashUsd > 0 ? Math.round(cashKrw / cashUsd) : 0;
+    if (cashUsd > 0) {
+      document.getElementById('cash-usd').value  = cashUsd;
+      document.getElementById('cash-rate').value = rate;
+      saveCashInput();
+    }
+
     const data = { stocks, header };
     saveSnapshot(date, data);
     render(data, date);
     renderHistorySection(date);
-    showToast(`✓ 토스 포트폴리오 ${stocks.length}개 종목 로드 완료`);
+    showToast(`✓ 토스 포트폴리오 ${stocks.length}개 종목 + 현금 $${cashUsd} 로드 완료`);
 
   } catch (err) {
     showToast('서버에 연결할 수 없어요 — npm start로 서버를 먼저 실행해주세요');
