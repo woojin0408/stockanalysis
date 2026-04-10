@@ -2317,15 +2317,15 @@ async function loadFromToss() {
     /* tossctl → 내부 stocks 포맷 변환 */
     const stocks = positions.map(p => ({
       name:      p.name,
-      rate:      p.profit_rate * 100,
-      pnl:       p.unrealized_pnl,
-      avg:       p.average_price,
-      cur:       p.current_price,
-      qty:       p.quantity,
-      value:     p.market_value,
-      invested:  p.market_value - p.unrealized_pnl,
-      dailyRate: p.daily_profit_rate * 100,
-      dailyPnl:  p.daily_profit_loss,
+      rate:      (p.profit_rate ?? 0) * 100,
+      pnl:       p.unrealized_pnl ?? 0,
+      avg:       p.average_price  ?? 0,
+      cur:       p.current_price  ?? 0,
+      qty:       p.quantity       ?? 0,
+      value:     p.market_value   ?? 0,
+      invested:  (p.market_value ?? 0) - (p.unrealized_pnl ?? 0),
+      dailyRate: (p.daily_profit_rate ?? 0) * 100,
+      dailyPnl:  p.daily_profit_loss ?? null,
     }));
 
     const totalInvested = stocks.reduce((s, st) => s + st.invested, 0);
