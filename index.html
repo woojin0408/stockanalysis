@@ -249,6 +249,15 @@
       class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-800 placeholder-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition mb-3"
       placeholder="토스 앱에서 복사한 데이터를 붙여넣으세요"></textarea>
 
+    <div class="flex items-center gap-2 mb-2">
+      <label class="text-xs font-semibold text-gray-500 whitespace-nowrap">보유 원화</label>
+      <div class="flex items-center gap-1 flex-1">
+        <span class="text-sm text-gray-400 font-medium">₩</span>
+        <input type="number" id="cash-krw" min="0" step="1"
+          class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition"
+          placeholder="0" oninput="saveCashInput()" />
+      </div>
+    </div>
     <div class="flex items-center gap-2 mb-3">
       <label class="text-xs font-semibold text-gray-500 whitespace-nowrap">보유 달러</label>
       <div class="flex items-center gap-1 flex-1">
@@ -1042,7 +1051,8 @@ function render({ stocks, header }, date) {
 
   const cashKRW     = getCashKRW();
   const cashUSD     = parseFloat(document.getElementById('cash-usd').value)  || 0;
-  const totValueAll = totValue + cashKRW; // 주식 + 달러 현금
+  const cashKRWOnly = parseFloat(document.getElementById('cash-krw').value)  || 0;
+  const totValueAll = totValue + cashKRW; // 주식 + 원화 현금 + 달러 현금
 
   const section = document.getElementById('results');
   section.classList.remove('hidden');
@@ -1066,7 +1076,10 @@ function render({ stocks, header }, date) {
   const breakdown = document.getElementById('s-asset-breakdown');
   if (cashKRW > 0) {
     breakdown.classList.remove('hidden');
-    breakdown.innerHTML = `주식 ${formatKRW(totValue)}<br>현금 $${cashUSD.toLocaleString()} <span class="text-gray-300">(≈${formatKRW(cashKRW)})</span>`;
+    const cashParts = [];
+    if (cashKRWOnly > 0) cashParts.push(`₩${cashKRWOnly.toLocaleString()}`);
+    if (cashUSD > 0) cashParts.push(`$${cashUSD.toLocaleString()} <span class="text-gray-300">(≈${formatKRW(cashUSD * (parseFloat(document.getElementById('cash-rate').value) || 0))})</span>`);
+    breakdown.innerHTML = `주식 ${formatKRW(totValue)}<br>현금 ${cashParts.join(' + ')}`;
   } else {
     breakdown.classList.add('hidden');
   }
@@ -1081,12 +1094,12 @@ function render({ stocks, header }, date) {
     animateNumber(sPnl, totPnl, 900, v => (v >= 0 ? '+' : '') + formatKRW(v));
   }
 
-  lastRenderData = { stocks, header, totRate, totValue, totValueAll, cashKRW, cashUSD, date };
+  lastRenderData = { stocks, header, totRate, totValue, totValueAll, cashKRW, cashUSD, cashKRWOnly, date };
   renderAnalysis(stocks, totRate, totValue);
   renderStrategyCard(stocks, totRate, totValue);
-  renderStocks(stocks, totValue, cashKRW, cashUSD, totValueAll);
+  renderStocks(stocks, totValue, cashKRW, cashUSD, totValueAll, cashKRWOnly);
   renderStockChart(stocks);
-  renderAllocationChart(stocks, totValue, cashKRW);
+  renderAllocationChart(stocks, totValue, cashKRW, cashKRWOnly);
   renderCompareCard(date);
   renderGoalCard(totRate);
 
@@ -1130,6 +1143,7 @@ function renderCompareCard(currentDate) {
 }
 
 const GOAL_KEY = 'portfolio_target_rate_v1';
+const CASH_KRW_KEY  = 'portfolio_cash_krw_v1';
 const CASH_USD_KEY  = 'portfolio_cash_usd_v1';
 const CASH_RATE_KEY = 'portfolio_cash_rate_v1';
 
@@ -1144,13 +1158,16 @@ function loadTargetRate() {
 }
 
 function saveCashInput() {
+  localStorage.setItem(CASH_KRW_KEY,  document.getElementById('cash-krw').value);
   localStorage.setItem(CASH_USD_KEY,  document.getElementById('cash-usd').value);
   localStorage.setItem(CASH_RATE_KEY, document.getElementById('cash-rate').value);
 }
 
 function loadCashInput() {
+  const krw  = localStorage.getItem(CASH_KRW_KEY);
   const usd  = localStorage.getItem(CASH_USD_KEY);
   const rate = localStorage.getItem(CASH_RATE_KEY);
+  if (krw  !== null) document.getElementById('cash-krw').value  = krw;
   if (usd  !== null) document.getElementById('cash-usd').value  = usd;
   if (rate !== null) document.getElementById('cash-rate').value = rate;
 }
@@ -1181,9 +1198,10 @@ async function fetchExchangeRate() {
 }
 
 function getCashKRW() {
+  const krw  = parseFloat(document.getElementById('cash-krw').value)  || 0;
   const usd  = parseFloat(document.getElementById('cash-usd').value)  || 0;
   const rate = parseFloat(document.getElementById('cash-rate').value) || 0;
-  return usd * rate;
+  return krw + usd * rate;
 }
 
 function renderGoalCard(totRate) {
@@ -1257,13 +1275,14 @@ function renderAnalysis(stocks, totRate, totValue) {
   warnEl.innerHTML = warns.map(w => `<div class="flex items-start gap-2">${w}</div>`).join('');
 }
 
-function renderStocks(stocks, totValue, cashKRW = 0, cashUSD = 0, totValueAll = 0) {
+function renderStocks(stocks, totValue, cashKRW = 0, cashUSD = 0, totValueAll = 0, cashKRWOnly = 0) {
   const meta   = document.getElementById('stock-meta');
   const listEl = document.getElementById('stock-list');
   const sorted = [...stocks].sort((a, b) => b.value - a.value);
   const hasDailyData = sorted.some(s => s.dailyPnl !== null);
   const baseTotal = totValueAll || totValue;
-  meta.textContent = `총 ${sorted.length}개 종목` + (cashKRW > 0 ? ' + 달러 현금' : '');
+  const cashLabel = [cashKRWOnly > 0 ? '원화 현금' : '', cashUSD > 0 ? '달러 현금' : ''].filter(Boolean).join(' + ');
+  meta.textContent = `총 ${sorted.length}개 종목` + (cashLabel ? ` + ${cashLabel}` : '');
 
   listEl.innerHTML = sorted.map(s => {
     const w   = (s.value / baseTotal * 100).toFixed(1);
@@ -1310,16 +1329,39 @@ function renderStocks(stocks, totValue, cashKRW = 0, cashUSD = 0, totValueAll = 
       </div>`;
   }).join('');
 
-  if (cashKRW > 0) {
-    const cashW = (cashKRW / baseTotal * 100).toFixed(1);
+  if (cashKRWOnly > 0) {
+    const krwW = (cashKRWOnly / baseTotal * 100).toFixed(1);
     listEl.innerHTML += `
       <div class="stock-row" style="border-top: 1px dashed #E5E7EB; margin-top:4px; padding-top:16px;">
         <div class="flex items-start justify-between mb-2">
           <div class="flex-1 min-w-0">
             <div>
+              <span class="font-semibold text-gray-900 text-sm">원화 현금</span>
+              <span class="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 ml-1.5 font-medium">KRW</span>
+              <span class="text-xs text-gray-500 ml-1">${krwW}%</span>
+            </div>
+          </div>
+          <div class="text-right ml-4 shrink-0">
+            <div class="text-xs text-gray-400 mb-0.5">보유 금액</div>
+            <div class="text-sm font-bold text-gray-900">${formatKRW(cashKRWOnly)}</div>
+          </div>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:0%;background:#94A3B8" data-w="${krwW}"></div>
+        </div>
+      </div>`;
+  }
+  if (cashUSD > 0) {
+    const usdKRW = cashKRW - cashKRWOnly;
+    const usdW   = (usdKRW / baseTotal * 100).toFixed(1);
+    listEl.innerHTML += `
+      <div class="stock-row" style="${cashKRWOnly > 0 ? '' : 'border-top: 1px dashed #E5E7EB; margin-top:4px; padding-top:16px;'}">
+        <div class="flex items-start justify-between mb-2">
+          <div class="flex-1 min-w-0">
+            <div>
               <span class="font-semibold text-gray-900 text-sm">달러 현금</span>
               <span class="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 ml-1.5 font-medium">USD</span>
-              <span class="text-xs text-gray-500 ml-1">${cashW}%</span>
+              <span class="text-xs text-gray-500 ml-1">${usdW}%</span>
             </div>
             <div class="flex items-baseline gap-2 mt-1.5">
               <span class="text-base font-extrabold text-gray-500">$${cashUSD.toLocaleString()}</span>
@@ -1327,11 +1369,11 @@ function renderStocks(stocks, totValue, cashKRW = 0, cashUSD = 0, totValueAll = 
           </div>
           <div class="text-right ml-4 shrink-0">
             <div class="text-xs text-gray-400 mb-0.5">원화 환산</div>
-            <div class="text-sm font-bold text-gray-900">${formatKRW(cashKRW)}</div>
+            <div class="text-sm font-bold text-gray-900">${formatKRW(usdKRW)}</div>
           </div>
         </div>
         <div class="bar-track">
-          <div class="bar-fill" style="width:0%;background:#94A3B8" data-w="${cashW}"></div>
+          <div class="bar-fill" style="width:0%;background:#94A3B8" data-w="${usdW}"></div>
         </div>
       </div>`;
   }
@@ -1378,7 +1420,7 @@ function renderStockChart(stocks) {
   });
 }
 
-function renderAllocationChart(stocks, totValue, cashKRW = 0) {
+function renderAllocationChart(stocks, totValue, cashKRW = 0, cashKRWOnly = 0) {
   const ctx = document.getElementById('allocation-chart').getContext('2d');
   if (allocChartInst) { allocChartInst.destroy(); allocChartInst = null; }
 
@@ -1399,10 +1441,16 @@ function renderAllocationChart(stocks, totValue, cashKRW = 0) {
   const data   = sorted.map(s => +(s.value / totValueAll * 100).toFixed(1));
   const colors = sorted.map((_, i) => COLORS[i % COLORS.length]);
 
-  if (cashKRW > 0) {
-    labels.push('달러 현금');
-    data.push(+(cashKRW / totValueAll * 100).toFixed(1));
+  if (cashKRWOnly > 0) {
+    labels.push('원화 현금');
+    data.push(+(cashKRWOnly / totValueAll * 100).toFixed(1));
     colors.push('#94A3B8');
+  }
+  const usdKRW = cashKRW - cashKRWOnly;
+  if (usdKRW > 0) {
+    labels.push('달러 현금');
+    data.push(+(usdKRW / totValueAll * 100).toFixed(1));
+    colors.push('#64748B');
   }
 
   allocChartInst = new Chart(ctx, {
@@ -2058,7 +2106,7 @@ async function onAiAnalyze() {
 
 function onCopyAiPrompt() {
   if (!lastRenderData) { showToast('먼저 포트폴리오를 분석해주세요'); return; }
-  const { stocks, totRate, totValue, totValueAll, cashKRW, cashUSD } = lastRenderData;
+  const { stocks, totRate, totValue, totValueAll, cashKRW, cashUSD, cashKRWOnly } = lastRenderData;
 
   const tickerMap = getTickerMap();
   const stockLines = stocks.map(s => {
@@ -2072,9 +2120,14 @@ function onCopyAiPrompt() {
     .filter(Boolean)
     .join(', ');
 
-  const cashLine = cashKRW > 0
-    ? `\n- 달러 현금: $${cashUSD.toLocaleString()} (≈ ${formatKRW(cashKRW)}), 비중 ${(cashKRW / (totValueAll || totValue) * 100).toFixed(1)}%`
-    : '';
+  const cashLines = [];
+  const safeKRWOnly = cashKRWOnly || 0;
+  if (safeKRWOnly > 0) cashLines.push(`\n- 원화 현금: ${formatKRW(safeKRWOnly)}, 비중 ${(safeKRWOnly / (totValueAll || totValue) * 100).toFixed(1)}%`);
+  if (cashUSD > 0) {
+    const usdKRW = cashKRW - safeKRWOnly;
+    cashLines.push(`\n- 달러 현금: $${cashUSD.toLocaleString()} (≈ ${formatKRW(usdKRW)}), 비중 ${(usdKRW / (totValueAll || totValue) * 100).toFixed(1)}%`);
+  }
+  const cashLine = cashLines.join('');
 
   const searchInstruction = tickerList
     ? `## 분석 전 반드시 할 것 (웹 검색 사용)
@@ -2340,21 +2393,31 @@ async function loadFromToss() {
       dailyRate:     totalInvested > 0 ? (dailyPnl / totalInvested) * 100 : 0,
     };
 
-    /* 현금(달러) 자동 채우기 */
-    const cashUsd = summary.orderable_amount_usd ?? 0;
-    const cashKrw = summary.markets?.us?.orderable_amount_krw ?? 0;
-    const rate    = cashUsd > 0 ? Math.round(cashKrw / cashUsd) : 0;
+    /* 현금 자동 채우기 (원화 + 달러) */
+    const cashUsd    = summary.orderable_amount_usd ?? 0;
+    const cashKrwUs  = summary.markets?.us?.orderable_amount_krw ?? 0;
+    const cashKrwKr  = summary.markets?.kr?.total_asset_amount  ?? 0;
+    const rate       = cashUsd > 0 ? Math.round(cashKrwUs / cashUsd) : 0;
+
+    if (cashKrwKr > 0) {
+      document.getElementById('cash-krw').value = cashKrwKr;
+    }
     if (cashUsd > 0) {
       document.getElementById('cash-usd').value  = cashUsd;
       document.getElementById('cash-rate').value = rate;
-      saveCashInput();
     }
+    if (cashKrwKr > 0 || cashUsd > 0) saveCashInput();
 
     const data = { stocks, header };
     saveSnapshot(date, data);
     render(data, date);
     renderHistorySection(date);
-    showToast(`✓ 토스 포트폴리오 ${stocks.length}개 종목 + 현금 $${cashUsd} 로드 완료`);
+
+    const cashParts = [];
+    if (cashKrwKr > 0) cashParts.push(`₩${cashKrwKr.toLocaleString()}`);
+    if (cashUsd   > 0) cashParts.push(`$${cashUsd}`);
+    const cashLabel = cashParts.length > 0 ? ` + 현금 ${cashParts.join(', ')}` : '';
+    showToast(`✓ 토스 포트폴리오 ${stocks.length}개 종목${cashLabel} 로드 완료`);
 
   } catch (err) {
     showToast('서버에 연결할 수 없어요 — npm start로 서버를 먼저 실행해주세요');
