@@ -19,10 +19,26 @@
 
     .card {
       background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      border: 1px solid rgba(229,231,235,.72);
+      border-radius: 18px;
+      box-shadow: 0 8px 26px rgba(15,23,42,0.045);
       padding: 24px;
     }
+    .card-compact { padding: 18px; }
+    .tool-card summary,
+    .input-card summary {
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    .tool-card summary::-webkit-details-marker,
+    .input-card summary::-webkit-details-marker { display: none; }
+    .summary-chevron { transition: transform .18s ease; }
+    details[open] .summary-chevron { transform: rotate(180deg); }
+    body.has-results .app-layout { grid-template-columns: 360px 1fr; }
+    body.has-results .left-panel { top: 1.25rem; }
+    .input-body { margin-top: 16px; }
+    body.has-results .input-card:not([open]) { padding: 18px; }
 
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(20px); }
@@ -69,6 +85,7 @@
     /* Stock row */
     .stock-row { padding: 13px 6px; border-radius: 12px; transition: background .14s; cursor: pointer; }
     .stock-row:hover { background: #F5F6F8; }
+    .stock-detail-line { display: flex; align-items: center; gap: 16px; }
 
     /* Daily line — hidden until hover or expanded */
     .daily-line { max-height: 0; opacity: 0; overflow: hidden; transition: max-height .2s ease, opacity .2s ease; }
@@ -136,14 +153,42 @@
       grid-auto-flow: dense;
       gap: 1rem;
     }
+    .col-span-1 { grid-column: span 1; }
+    .col-span-2 { grid-column: span 2; }
+    .col-span-3 { grid-column: span 3; }
+
+    .metric-total {
+      border: none;
+      background:
+        radial-gradient(circle at top right, rgba(49,130,246,.14), transparent 34%),
+        linear-gradient(135deg, #FFFFFF 0%, #F8FBFF 100%);
+    }
+    .metric-mini { min-height: 110px; }
+    .mobile-results-title { display: none; }
+    .allocation-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .allocation-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: #4B5563;
+    }
+    .allocation-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      flex: 0 0 auto;
+    }
+
     @media (max-width: 1100px) {
       #dashboard-grid, #history-grid { grid-template-columns: repeat(2, 1fr); }
       .col-span-3 { grid-column: span 2; }
     }
-
-    .col-span-1 { grid-column: span 1; }
-    .col-span-2 { grid-column: span 2; }
-    .col-span-3 { grid-column: span 3; }
 
     /* Drag handle */
     .drag-handle {
@@ -184,30 +229,46 @@
       position: sticky;
       top: 2rem;
     }
+    .cash-row {
+      display: grid !important;
+      grid-template-columns: 82px minmax(0, 1fr);
+      row-gap: 10px;
+      column-gap: 8px;
+      align-items: center;
+    }
+    .cash-row .cash-label { width: auto; }
+    .cash-row .cash-main,
+    .cash-row .cash-rate-line {
+      min-width: 0;
+    }
+    .cash-row .cash-main input {
+      min-width: 0;
+    }
+    .cash-row .cash-rate-wrap input {
+      width: 116px;
+      max-width: 100%;
+    }
     @media (max-width: 900px) {
-      .app-layout { grid-template-columns: 1fr; }
+      .app-layout { display: flex; flex-direction: column; }
       .left-panel { position: static; }
     }
-    /* AI key input */
-    .ai-key-input {
-      font-family: 'Pretendard', system-ui, sans-serif;
-      border: 1.5px solid #E5E7EB; border-radius: 12px;
-      padding: 10px 14px; font-size: 13px; color: #1F2937;
-      background: white; outline: none; width: 100%;
-      transition: border-color .2s, box-shadow .2s;
+    @media (max-width: 640px) {
+      .px-4.py-8 { padding-top: 24px; }
+      .card { border-radius: 18px; padding: 20px; }
+      .left-panel, .right-panel { min-width: 0; }
+      body.has-results .right-panel { order: 1; }
+      body.has-results .left-panel { order: 2; }
+      body.has-results .left-panel > .app-title { display: none; }
+      .mobile-results-title { display: block; }
+      .summary-grid { grid-template-columns: 1fr 1fr !important; }
+      .summary-grid .metric-total { grid-column: span 2; }
+      #dashboard-grid, #history-grid { grid-template-columns: 1fr !important; }
+      .col-span-1, .col-span-2, .col-span-3 { grid-column: span 1 !important; }
+      .cash-row { grid-template-columns: 72px minmax(0, 1fr); }
+      .stock-detail-line { display: none; }
+      .metric-mini { min-height: 104px; }
+      #allocation-card canvas { max-height: 220px; }
     }
-    .ai-key-input:focus {
-      border-color: #3182F6;
-      box-shadow: 0 0 0 3px rgba(49,130,246,.12);
-    }
-    /* AI analysis card */
-    .ai-action-buy    { background:#ECFDF3; color:#16B364; }
-    .ai-action-sell   { background:#FFF1F0; color:#F04438; }
-    .ai-action-hold   { background:#F3F4F6; color:#6B7280; }
-    .risk-score-ring  { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; flex-shrink:0; }
-    .risk-low    { background:#ECFDF3; color:#16B364; }
-    .risk-mid    { background:#FFF8E6; color:#D08B00; }
-    .risk-high   { background:#FFF1F0; color:#F04438; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -219,14 +280,22 @@
   <div class="left-panel space-y-4">
 
     <!-- Header -->
-    <div>
+    <div class="app-title">
       <p class="text-xs font-semibold text-blue-500 mb-1 tracking-wide uppercase">Portfolio Tracker</p>
       <h1 class="text-2xl font-bold text-gray-900">내 투자 분석</h1>
       <p class="text-sm text-gray-400 mt-1">토스 앱에서 복사 → 분석 & 저장</p>
     </div>
 
   <!-- ── Input Card ── -->
-  <div class="card">
+  <details class="card input-card" id="input-card" open>
+    <summary class="flex items-center justify-between gap-3">
+      <div>
+        <div class="font-bold text-gray-900">데이터 입력</div>
+        <div class="text-xs text-gray-400 mt-0.5">토스 불러오기 또는 복사 데이터 붙여넣기</div>
+      </div>
+      <span class="summary-chevron text-gray-400">⌄</span>
+    </summary>
+    <div class="input-body">
     <!-- Date row -->
     <div class="flex items-center gap-3 mb-3">
       <div class="flex-1">
@@ -258,24 +327,26 @@
           placeholder="0" oninput="saveCashInput()" />
       </div>
     </div>
-    <div class="flex items-center gap-2 mb-3">
-      <label class="text-xs font-semibold text-gray-500 whitespace-nowrap">보유 달러</label>
-      <div class="flex items-center gap-1 flex-1">
+    <div class="cash-row mb-3">
+      <label class="cash-label text-xs font-semibold text-gray-500 whitespace-nowrap">보유 달러</label>
+      <div class="cash-main flex items-center gap-1 flex-1">
         <span class="text-sm text-gray-400 font-medium">$</span>
         <input type="number" id="cash-usd" min="0" step="0.01"
           class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition"
           placeholder="0" oninput="saveCashInput()" />
       </div>
-      <label class="text-xs font-semibold text-gray-500 whitespace-nowrap">환율</label>
-      <div class="flex items-center gap-1">
-        <input type="number" id="cash-rate" min="0" step="1"
-          class="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition"
-          placeholder="1350" oninput="saveCashInput()" />
-        <span class="text-xs text-gray-400">₩</span>
-        <button onclick="fetchExchangeRate()" id="rate-refresh-btn"
-          class="text-xs text-blue-400 hover:text-blue-600 transition px-1" title="현재 환율 가져오기">↻</button>
+      <label class="cash-label text-xs font-semibold text-gray-500 whitespace-nowrap">환율</label>
+      <div class="cash-rate-line flex items-center gap-2">
+        <div class="cash-rate-wrap flex items-center gap-1">
+          <input type="number" id="cash-rate" min="0" step="1"
+            class="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition"
+            placeholder="1350" oninput="saveCashInput()" />
+          <span class="text-xs text-gray-400">₩</span>
+          <button onclick="fetchExchangeRate()" id="rate-refresh-btn"
+            class="text-xs text-blue-400 hover:text-blue-600 transition px-1" title="현재 환율 가져오기">↻</button>
+        </div>
+        <span id="rate-updated" class="text-xs text-gray-300"></span>
       </div>
-      <span id="rate-updated" class="text-xs text-gray-300"></span>
     </div>
 
     <div class="flex items-center gap-3 mb-3">
@@ -290,11 +361,21 @@
     <button class="btn-primary" id="analyze-btn" onclick="onAnalyze()">
       분석 & 저장
     </button>
-  </div>
+    </div>
+  </details>
 
-  <!-- ── Export Card ── -->
-  <div class="card" id="export-card" style="display:none">
-    <div class="font-bold text-gray-900 mb-3">데이터 내보내기</div>
+  <!-- ── Data Tools Card ── -->
+  <details class="card tool-card card-compact" id="data-tools-card">
+    <summary class="flex items-center justify-between gap-3">
+      <div>
+        <div class="font-bold text-gray-900">데이터 도구</div>
+        <div class="text-xs text-gray-400 mt-0.5">CSV 가져오기 · 내보내기</div>
+      </div>
+      <span class="summary-chevron text-gray-400">⌄</span>
+    </summary>
+    <div class="mt-4">
+    <div id="export-card" style="display:none">
+    <div class="font-semibold text-gray-800 mb-3 text-sm">내보내기</div>
     <div class="flex gap-2">
       <button onclick="exportCSV()"
         class="flex-1 flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-700 hover:border-blue-400 hover:text-blue-500 transition">
@@ -308,24 +389,20 @@
       </button>
     </div>
     <p class="text-xs text-gray-400 mt-2">저장된 전체 기록을 내보내요</p>
-  </div>
+    </div>
 
-  <!-- ── AI Settings Card ── -->
-  <div class="card" id="ai-settings-card">
-    <div class="flex items-center gap-2 mb-3">
-      <span class="text-base">🤖</span>
-      <span class="font-bold text-gray-900">AI 분석 설정</span>
-    </div>
-    <label class="text-xs font-semibold text-gray-500 block mb-1.5">Claude API 키</label>
-    <div class="flex gap-2 mb-2">
-      <input type="password" id="ai-key-input" class="ai-key-input" placeholder="sk-ant-..." />
-      <button onclick="onSaveApiKey()"
-        class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-semibold hover:bg-blue-600 transition whitespace-nowrap">
-        저장
-      </button>
-    </div>
-    <div id="ai-key-status" class="text-xs text-gray-400">개인 키는 이 기기에만 저장됩니다</div>
+  <!-- ── Import Card ── -->
+  <div id="import-card" class="mt-4">
+    <div class="font-semibold text-gray-800 mb-3 text-sm">가져오기</div>
+    <label class="flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-blue-400 hover:text-blue-500 transition cursor-pointer">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      파일 선택
+      <input type="file" accept=".csv" class="hidden" onchange="importCSV(this)" />
+    </label>
+    <p class="text-xs text-gray-400 mt-2">이전에 내보낸 CSV 파일을 불러와요</p>
   </div>
+    </div>
+  </details>
 
   </div><!-- /left-panel -->
 
@@ -334,21 +411,9 @@
 
   <!-- ── Results ── -->
   <div id="results" class="hidden">
-
-    <!-- AI 분석 버튼 -->
-    <div class="flex justify-end gap-2 mb-2" id="ai-analyze-row" style="display:none!important">
-      <button onclick="showPasteModal()" id="ai-paste-btn"
-        class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-2xl text-sm font-bold hover:border-green-400 hover:text-green-600 transition shadow-sm">
-        <span>📥</span> 결과 붙여넣기
-      </button>
-      <button onclick="onCopyAiPrompt()" id="ai-copy-btn"
-        class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-2xl text-sm font-bold hover:border-blue-400 hover:text-blue-500 transition shadow-sm">
-        <span>📋</span> claude.ai로 분석
-      </button>
-      <button onclick="onAiAnalyze()" id="ai-analyze-btn"
-        class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-2xl text-sm font-bold hover:opacity-90 transition shadow-sm">
-        <span>✨</span> AI 분석하기
-      </button>
+    <div class="mobile-results-title mb-4">
+      <p class="text-xs font-semibold text-blue-500 mb-1 tracking-wide uppercase">Portfolio Tracker</p>
+      <h1 class="text-2xl font-bold text-gray-900">내 투자 분석</h1>
     </div>
 
     <!-- Date label -->
@@ -358,18 +423,18 @@
     </div>
 
     <!-- Summary cards (고정 상단 행) -->
-    <div class="grid grid-cols-3 gap-3 mb-4">
-      <div class="card animate-slide-up" style="animation-delay:0s">
+    <div class="summary-grid grid grid-cols-3 gap-3 mb-4">
+      <div class="card animate-slide-up metric-total" style="animation-delay:0s">
         <div class="text-xs text-gray-400 font-medium mb-1">총 자산</div>
-        <div class="text-lg font-extrabold text-gray-900 leading-tight" id="s-total">—</div>
+        <div class="text-2xl font-extrabold text-gray-900 leading-tight" id="s-total">—</div>
         <div class="text-xs text-gray-400 mt-1 leading-relaxed hidden" id="s-asset-breakdown"></div>
       </div>
-      <div class="card animate-slide-up" style="animation-delay:.07s">
+      <div class="card animate-slide-up metric-mini" style="animation-delay:.07s">
         <div class="text-xs text-gray-400 font-medium mb-1">수익률 <span class="text-gray-300">(주식)</span></div>
         <div class="text-lg font-extrabold leading-tight" id="s-rate">—</div>
         <div class="text-xs font-semibold mt-0.5 leading-tight" id="s-profit">—</div>
       </div>
-      <div class="card animate-slide-up" style="animation-delay:.14s">
+      <div class="card animate-slide-up metric-mini" style="animation-delay:.14s">
         <div class="text-xs text-gray-400 font-medium mb-1" id="s-pnl-label">평가손익 <span class="text-gray-300">(주식)</span></div>
         <div class="text-lg font-extrabold leading-tight" id="s-pnl">—</div>
       </div>
@@ -378,62 +443,13 @@
     <!-- 드래그 가능한 대시보드 그리드 -->
     <div id="dashboard-grid">
 
-      <!-- AI Analysis Card -->
-      <div class="card animate-slide-up col-span-3 hidden" id="ai-card" data-card-id="ai-card" style="animation-delay:.05s">
-        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
-
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <span class="text-lg">✨</span>
-            <span class="font-bold text-gray-900">AI 분석</span>
-            <span class="text-xs text-gray-400" id="ai-card-date"></span>
-          </div>
-          <button onclick="onAiAnalyze()" id="ai-card-refresh"
-            class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center gap-1">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            새로고침
-          </button>
-        </div>
-
-        <!-- Loading state -->
-        <div id="ai-card-loading" class="hidden py-8 flex flex-col items-center gap-3">
-          <div class="spinner" style="width:24px;height:24px;border-color:rgba(99,102,241,.2);border-top-color:#6366F1"></div>
-          <div class="text-sm text-gray-400">Claude가 포트폴리오를 분석하고 있어요...</div>
-        </div>
-
-        <!-- Content -->
-        <div id="ai-card-content" class="hidden">
-          <!-- 오늘 요약 + 리스크 점수 -->
-          <div class="grid grid-cols-2 gap-4 mb-5">
-            <div class="bg-gray-50 rounded-2xl p-4">
-              <div class="text-xs font-semibold text-gray-400 mb-2">📋 오늘 요약</div>
-              <p class="text-sm text-gray-700 leading-relaxed" id="ai-summary"></p>
-            </div>
-            <div class="bg-gray-50 rounded-2xl p-4 flex items-start gap-4">
-              <div class="risk-score-ring" id="ai-risk-ring">
-                <span id="ai-risk-score">—</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-xs font-semibold text-gray-400 mb-1">🎯 리스크 점수</div>
-                <p class="text-sm text-gray-600 leading-snug" id="ai-risk-reason"></p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 종목별 분석 -->
-          <div class="text-xs font-semibold text-gray-400 mb-3">종목별 분석</div>
-          <div id="ai-stocks" class="space-y-2"></div>
-        </div>
-      </div>
-
       <!-- Comparison card -->
       <div class="card animate-slide-up hidden col-span-2" id="compare-card" data-card-id="compare-card" style="animation-delay:.17s">
         <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
         <div class="text-xs font-semibold text-gray-400 mb-2">전 기록 대비</div>
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-xs text-gray-400 mb-0.5">평가금액 변화</div>
+            <div class="text-xs text-gray-400 mb-0.5">총 자산 변화</div>
             <div class="text-base font-bold" id="cmp-value">—</div>
           </div>
           <div class="text-center">
@@ -461,22 +477,6 @@
           <span>현재 <span class="font-semibold text-gray-700" id="goal-current">—</span></span>
           <span>목표 <span class="font-semibold text-gray-700" id="goal-target">—</span></span>
         </div>
-      </div>
-
-      <!-- Paste Analysis Result Card -->
-      <div class="card animate-slide-up col-span-3 hidden" id="paste-result-card" data-card-id="paste-result-card">
-        <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
-        <div class="flex items-center justify-between mb-5">
-          <div class="flex items-center gap-2">
-            <span class="text-lg">🌐</span>
-            <div>
-              <div class="font-bold text-gray-900">AI 포트폴리오 진단</div>
-              <div class="text-xs text-gray-400" id="paste-date-label"></div>
-            </div>
-          </div>
-          <button onclick="showPasteModal()" class="text-xs text-gray-400 hover:text-blue-500 transition px-2 py-1 rounded-lg hover:bg-blue-50">↻ 다시 입력</button>
-        </div>
-        <div id="paste-result-content"></div>
       </div>
 
       <!-- Analysis -->
@@ -513,7 +513,8 @@
       <div class="card animate-slide-up col-span-1" id="allocation-card" data-card-id="allocation-card" style="animation-delay:.31s">
         <div class="drag-handle"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="1.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="5.5" width="2.5" height="2.5" rx="1"/><rect x="2" y="9.5" width="2.5" height="2.5" rx="1"/><rect x="8" y="9.5" width="2.5" height="2.5" rx="1"/></svg></div>
         <div class="font-bold text-gray-900 mb-4">비중 현황</div>
-        <div style="height:280px;position:relative"><canvas id="allocation-chart"></canvas></div>
+        <div style="height:220px;position:relative"><canvas id="allocation-chart"></canvas></div>
+        <div id="allocation-list" class="allocation-list"></div>
       </div>
 
       <!-- Per-stock bar chart -->
@@ -573,28 +574,6 @@
 </div><!-- /app-layout -->
 </div><!-- /container -->
 
-<!-- ── Paste Analysis Modal ── -->
-<div id="paste-modal" class="fixed inset-0 z-50 hidden" onclick="closePasteModal(event)">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-  <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[88vh] overflow-y-auto"
-       style="padding: 28px 20px 40px;" onclick="event.stopPropagation()">
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <div class="font-bold text-gray-900 text-lg">분석 결과 붙여넣기</div>
-        <div class="text-xs text-gray-400 mt-0.5">claude.ai 분석 결과를 그대로 붙여넣으세요</div>
-      </div>
-      <button onclick="closePasteModal()" class="text-gray-400 hover:text-gray-700 text-xl font-bold p-2">✕</button>
-    </div>
-    <textarea id="paste-input" rows="12"
-      class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 placeholder-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-400 outline-none transition mb-3"
-      placeholder="claude.ai에서 받은 포트폴리오 분석 결과를 여기에 붙여넣으세요..."></textarea>
-    <button onclick="onSubmitPaste()"
-      class="w-full py-3 bg-green-500 text-white rounded-2xl text-sm font-bold hover:bg-green-600 transition">
-      분석 결과 적용
-    </button>
-  </div>
-</div>
-
 <!-- ── Stock Detail Modal ── -->
 <div id="stock-modal" class="fixed inset-0 z-50 hidden" onclick="closeStockModal(event)">
   <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
@@ -608,11 +587,35 @@
       <div class="flex items-start justify-between mb-5">
         <div>
           <div class="font-bold text-gray-900 text-lg" id="modal-name">—</div>
-          <div class="text-xs text-gray-400 mt-0.5" id="modal-ticker">—</div>
+          <div class="text-xs text-gray-400 mt-0.5" id="modal-ticker">티커 미등록</div>
         </div>
-        <div class="text-right">
-          <div class="text-lg font-extrabold text-gray-900" id="modal-price">—</div>
-          <div class="text-sm font-semibold" id="modal-change"></div>
+        <div class="flex items-start gap-3">
+          <div class="text-right">
+            <div class="text-lg font-extrabold text-gray-900" id="modal-price">—</div>
+            <div class="text-sm font-semibold" id="modal-change"></div>
+          </div>
+          <button onclick="closeStockModal()" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition text-lg leading-none" title="닫기">×</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mb-5">
+        <div class="bg-gray-50 rounded-2xl px-4 py-3">
+          <div class="text-xs text-gray-400 mb-1">수익률</div>
+          <div class="text-base font-extrabold" id="modal-holding-rate">—</div>
+          <div class="text-xs font-semibold mt-0.5" id="modal-holding-pnl">—</div>
+        </div>
+        <div class="bg-gray-50 rounded-2xl px-4 py-3">
+          <div class="text-xs text-gray-400 mb-1">평가금</div>
+          <div class="text-base font-extrabold text-gray-900" id="modal-holding-value">—</div>
+          <div class="text-xs text-gray-400 mt-0.5" id="modal-holding-qty">—</div>
+        </div>
+        <div class="bg-gray-50 rounded-2xl px-4 py-3">
+          <div class="text-xs text-gray-400 mb-1">매수평균</div>
+          <div class="text-sm font-bold text-gray-700" id="modal-holding-avg">—</div>
+        </div>
+        <div class="bg-gray-50 rounded-2xl px-4 py-3">
+          <div class="text-xs text-gray-400 mb-1">입력 현재가</div>
+          <div class="text-sm font-bold text-gray-700" id="modal-holding-cur">—</div>
         </div>
       </div>
 
@@ -627,8 +630,8 @@
 
       <!-- Ticker input (shown when ticker not registered) -->
       <div id="modal-ticker-input" class="hidden mt-5 p-4 bg-gray-50 rounded-2xl">
-        <div class="text-sm font-semibold text-gray-700 mb-1">티커 코드를 입력해주세요</div>
-        <div class="text-xs text-gray-400 mb-3">예: 삼성전자 → 005930.KS</div>
+        <div class="text-sm font-semibold text-gray-700 mb-1">시세 차트 연결</div>
+        <div class="text-xs text-gray-400 mb-3">티커를 저장하면 현재가와 1개월 차트를 불러와요. 예: 삼성전자 → 005930.KS</div>
         <div class="flex gap-2">
           <input type="text" id="ticker-input-field" placeholder="005930.KS"
             class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition" />
@@ -660,17 +663,27 @@ function pctFmt(v) {
 
 function parseKRW(s) {
   if (!s || s.trim() === '-') return 0;
-  const base = s.split('(')[0].trim();
-  const sign = base.startsWith('-') ? -1 : 1;
-  const num  = parseFloat(base.replace(/[^\d.]/g, ''));
-  return isNaN(num) ? 0 : sign * num;
+  const base = String(s).split('(')[0].trim();
+  const sign = base.includes('-') || base.includes('−') ? -1 : 1;
+  const unsigned = base.replace(/[-−]/g, '');
+  let total = 0;
+
+  const eok = unsigned.match(/([\d,.]+)\s*억/);
+  if (eok) total += parsePlainNumber(eok[1]) * 1e8;
+
+  const man = unsigned.match(/([\d,.]+)\s*만/);
+  if (man) total += parsePlainNumber(man[1]) * 1e4;
+
+  const cheon = unsigned.match(/([\d,.]+)\s*천/);
+  if (!eok && !man && cheon) total += parsePlainNumber(cheon[1]) * 1e3;
+
+  if (total > 0) return sign * total;
+  return sign * Math.abs(parsePlainNumber(unsigned));
 }
 
 function parsePct(s) {
   if (!s || s.trim() === '-') return 0;
-  const sign = s.trim().startsWith('-') ? -1 : 1;
-  const num  = parseFloat(s.replace(/[^\d.]/g, ''));
-  return isNaN(num) ? 0 : sign * num;
+  return parsePlainNumber(s);
 }
 
 function animateNumber(el, target, duration, fmt) {
@@ -709,10 +722,116 @@ function showToast(msg) {
   t._tid = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
+function escapeHTML(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function parsePlainNumber(value) {
+  const match = String(value ?? '').replace(/,/g, '').match(/[-−]?\d+(?:\.\d+)?/);
+  if (!match) return 0;
+  return parseFloat(match[0].replace('−', '-')) || 0;
+}
+
+function parseCSVRows(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
+  const src = String(text ?? '').replace(/^\uFEFF/, '');
+
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    const next = src[i + 1];
+    if (inQuotes) {
+      if (ch === '"' && next === '"') {
+        cell += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        cell += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      row.push(cell);
+      cell = '';
+    } else if (ch === '\n') {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+    } else if (ch !== '\r') {
+      cell += ch;
+    }
+  }
+  row.push(cell);
+  rows.push(row);
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
+
+function parseTableRows(text) {
+  const src = String(text ?? '').trim();
+  if (src.includes('\t') && !src.includes(',')) {
+    return src.split(/\r?\n/).map(line => line.split('\t'));
+  }
+  return parseCSVRows(src);
+}
+
+function csvCell(value) {
+  let s = String(value ?? '');
+  if (/^[=+@]/.test(s)) s = "'" + s;
+  if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function getCashStateFromInputs() {
+  return {
+    krwOnly: parsePlainNumber(document.getElementById('cash-krw').value),
+    usd: parsePlainNumber(document.getElementById('cash-usd').value),
+    rate: parsePlainNumber(document.getElementById('cash-rate').value),
+  };
+}
+
+function normalizeCashState(cash) {
+  return {
+    krwOnly: parsePlainNumber(cash?.krwOnly ?? cash?.krw ?? 0),
+    usd: parsePlainNumber(cash?.usd ?? 0),
+    rate: parsePlainNumber(cash?.rate ?? 0),
+  };
+}
+
+function cashStateToKRW(cash) {
+  const c = normalizeCashState(cash);
+  return c.krwOnly + c.usd * c.rate;
+}
+
+function getSnapshotStockValue(snap) {
+  return snap.header?.totalValue || snap.stocks.reduce((s, x) => s + x.value, 0);
+}
+
+function getSnapshotInvestedValue(snap) {
+  return snap.header?.totalInvested || snap.stocks.reduce((s, x) => s + x.invested, 0);
+}
+
+function getSnapshotTotalAssetValue(snap) {
+  return getSnapshotStockValue(snap) + cashStateToKRW(snap.cash);
+}
+
+function getSnapshotTotalCostValue(snap) {
+  return getSnapshotInvestedValue(snap) + cashStateToKRW(snap.cash);
+}
+
 /* ══════════════════════════════════════════
    STORAGE
 ══════════════════════════════════════════ */
 const STORAGE_KEY = 'portfolio_snapshots_v1';
+let renderedSnapshotDates = [];
 
 function getSnapshots() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
@@ -721,7 +840,8 @@ function getSnapshots() {
 
 function saveSnapshot(date, data) {
   const snaps = getSnapshots();
-  snaps[date] = { header: data.header, stocks: data.stocks, ts: Date.now() };
+  const cash = data.cash ? normalizeCashState(data.cash) : getCashStateFromInputs();
+  snaps[date] = { header: data.header, stocks: data.stocks, cash, ts: Date.now() };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snaps));
 }
 
@@ -729,14 +849,14 @@ function loadSnapshot(date) {
   const snaps = getSnapshots();
   const snap  = snaps[date];
   if (!snap) return;
-  // AI 카드 초기화 (다른 스냅샷 로드 시 이전 AI 분석 숨김)
-  const aiCard = document.getElementById('ai-card');
-  if (aiCard) aiCard.classList.add('hidden');
-  const aiRow = document.getElementById('ai-analyze-row');
-  if (aiRow) aiRow.style.setProperty('display', 'none', 'important');
-  render({ stocks: snap.stocks, header: snap.header }, date);
+  render({ stocks: snap.stocks, header: snap.header, cash: snap.cash }, date);
   renderSnapshotList(snaps, date);
   setTimeout(() => document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
+
+function loadSnapshotByIndex(index) {
+  const date = renderedSnapshotDates[index];
+  if (date) loadSnapshot(date);
 }
 
 /* ══════════════════════════════════════════
@@ -744,7 +864,7 @@ function loadSnapshot(date) {
 ══════════════════════════════════════════ */
 function parseToss(raw) {
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  const header = { totalValue: 0, totalInvested: 0, totalPnl: 0, totalRate: 0, dailyPnl: 0, dailyRate: 0 };
+  const header = { totalValue: 0, totalInvested: 0, totalPnl: 0, totalRate: 0, dailyPnl: null, dailyRate: null };
 
   const firstLogo = lines.indexOf('logo');
   const hLines    = firstLogo >= 0 ? lines.slice(0, firstLogo) : lines;
@@ -767,7 +887,7 @@ function parseToss(raw) {
 
   const stocks = [];
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i] !== 'logo' || i + 12 >= lines.length) continue;
+    if (lines[i] !== 'logo' || i + 10 >= lines.length) continue;
     const name      = lines[i + 1];
     const rate      = parsePct(lines[i + 2]);
     const pnl       = parseKRW(lines[i + 3]);
@@ -786,14 +906,14 @@ function parseToss(raw) {
 }
 
 function parseCSV(raw) {
-  const stocks = raw.trim().split('\n').map(line => {
-    const cols = line.split(/[,\t]+/).map(c => c.trim());
+  const stocks = parseTableRows(raw).map(cols => {
+    cols = cols.map(c => c.trim());
     if (cols.length < 4) return null;
     const [name, q, a, c] = cols;
-    const qty = parseFloat(q.replace(/[^\d.]/g, ''));
-    const avg = parseFloat(a.replace(/[^\d.]/g, ''));
-    const cur = parseFloat(c.replace(/[^\d.]/g, ''));
-    if (!name || isNaN(qty) || isNaN(avg) || isNaN(cur) || qty <= 0) return null;
+    const qty = parsePlainNumber(q);
+    const avg = parsePlainNumber(a);
+    const cur = parsePlainNumber(c);
+    if (!name || qty <= 0 || avg <= 0 || cur <= 0) return null;
     const invested = qty * avg, value = qty * cur, pnl = value - invested;
     const rate = (cur - avg) / avg * 100;
     return { name, rate, pnl, avg, cur, qty, value, invested, dailyRate: null, dailyPnl: null };
@@ -801,8 +921,30 @@ function parseCSV(raw) {
   return { stocks, header: null };
 }
 
+function parseTossJSON(raw) {
+  const arr = JSON.parse(raw);
+  if (!Array.isArray(arr)) return { stocks: [], header: null };
+  const stocks = arr.map(s => {
+    const qty      = s.quantity || 0;
+    const avg      = s.average_price || 0;
+    const cur      = s.current_price || 0;
+    const value    = s.market_value || qty * cur;
+    const invested = qty * avg;
+    const pnl      = s.unrealized_pnl ?? (value - invested);
+    const rate     = (s.profit_rate != null) ? s.profit_rate * 100 : ((cur - avg) / avg * 100);
+    const dailyPnl  = s.daily_profit_loss ?? null;
+    const dailyRate = (s.daily_profit_rate != null) ? s.daily_profit_rate * 100 : null;
+    return { name: s.name || s.symbol, rate, pnl, avg, cur, qty, value, invested, dailyRate, dailyPnl };
+  }).filter(s => s.qty > 0);
+  return { stocks, header: null };
+}
+
 function parseInput(raw) {
-  return raw.includes('logo') ? parseToss(raw) : parseCSV(raw);
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    try { return parseTossJSON(trimmed); } catch (e) { /* fall through */ }
+  }
+  return trimmed.includes('logo') ? parseToss(trimmed) : parseCSV(trimmed);
 }
 
 /* ══════════════════════════════════════════
@@ -818,12 +960,21 @@ let lastRenderData = null; // { stocks, header, totRate, totValue, date }
 ══════════════════════════════════════════ */
 let modalChartInst    = null;
 let currentModalStock = null;
+let renderedStockRows = [];
+
+function openStockModalByIndex(index) {
+  const stock = renderedStockRows[index];
+  if (!stock) return;
+  openStockModal(stock.name);
+}
 
 function openStockModal(stockName) {
   currentModalStock = stockName;
+  const stock = renderedStockRows.find(s => s.name === stockName)
+    || lastRenderData?.stocks?.find(s => s.name === stockName);
 
   document.getElementById('modal-name').textContent     = stockName;
-  document.getElementById('modal-ticker').textContent   = '—';
+  document.getElementById('modal-ticker').textContent   = '티커 미등록';
   document.getElementById('modal-price').textContent    = '—';
   document.getElementById('modal-change').textContent   = '';
   document.getElementById('modal-chart-area').classList.add('hidden');
@@ -832,6 +983,26 @@ function openStockModal(stockName) {
   document.getElementById('modal-ticker-input').classList.add('hidden');
 
   if (modalChartInst) { modalChartInst.destroy(); modalChartInst = null; }
+
+  const rateEl = document.getElementById('modal-holding-rate');
+  const pnlEl  = document.getElementById('modal-holding-pnl');
+  if (stock) {
+    const cls = stock.rate >= 0 ? 'c-profit' : 'c-loss';
+    rateEl.textContent = (stock.rate >= 0 ? '+' : '') + stock.rate.toFixed(2) + '%';
+    rateEl.className = 'text-base font-extrabold ' + cls;
+    pnlEl.textContent = (stock.pnl >= 0 ? '+' : '') + formatKRW(stock.pnl);
+    pnlEl.className = 'text-xs font-semibold mt-0.5 ' + cls;
+    document.getElementById('modal-holding-value').textContent = formatKRW(stock.value);
+    document.getElementById('modal-holding-qty').textContent = `${stock.qty.toLocaleString('ko-KR')}주`;
+    document.getElementById('modal-holding-avg').textContent = formatKRW(stock.avg);
+    document.getElementById('modal-holding-cur').textContent = formatKRW(stock.cur);
+  } else {
+    rateEl.textContent = pnlEl.textContent = '—';
+    rateEl.className = 'text-base font-extrabold text-gray-400';
+    pnlEl.className = 'text-xs font-semibold mt-0.5 text-gray-400';
+    ['modal-holding-value','modal-holding-qty','modal-holding-avg','modal-holding-cur']
+      .forEach(id => { document.getElementById(id).textContent = '—'; });
+  }
 
   document.getElementById('stock-modal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -879,8 +1050,19 @@ function saveTicker() {
   loadStockData(currentModalStock, ticker);
 }
 
+function formatMarketPrice(value, currency) {
+  const code = String(currency || '').toUpperCase();
+  if (code === 'USD') {
+    return '$' + Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+  if (code === 'KRW') {
+    return Number(value || 0).toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + '원';
+  }
+  return Number(value || 0).toLocaleString('ko-KR', { maximumFractionDigits: 2 }) + (code ? ' ' + code : '');
+}
+
 /* ══════════════════════════════════════════
-   ALPHA VANTAGE — cache + fetch
+   QUOTE DATA — cache + local server fetch
 ══════════════════════════════════════════ */
 const AV_CACHE_KEY = 'av_cache_v1';
 const AV_CACHE_TTL = 60 * 60 * 1000; // 1시간
@@ -903,52 +1085,17 @@ function getFromCache(key) {
   return entry.data;
 }
 
-async function fetchYahooFinance(ticker) {
-  const cacheKey = `yf_${ticker}`;
+async function fetchQuoteData(ticker) {
+  const cacheKey = `quote_${ticker}`;
   const cached = getFromCache(cacheKey);
   if (cached) return cached;
 
-  const yfUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1mo`;
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,
-    `https://corsproxy.io/?url=${encodeURIComponent(yfUrl)}`,
-  ];
-
-  let json = null;
-  for (const url of proxies) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (res.ok) { json = await res.json(); break; }
-    } catch {}
-  }
-  if (!json) throw new Error('데이터를 불러올 수 없어요. 잠시 후 다시 시도해주세요.');
-
-  const result = json.chart?.result?.[0];
-  if (!result) throw new Error('종목 데이터를 찾을 수 없어요 (티커 확인)');
-
-  const meta       = result.meta;
-  const timestamps = result.timestamp || [];
-  const rawCloses  = result.indicators?.quote?.[0]?.close || [];
-
-  const validPairs = timestamps
-    .map((ts, i) => ({ ts, close: rawCloses[i] }))
-    .filter(d => d.close != null);
-
-  const dates  = validPairs.map(d => {
-    const dt = new Date(d.ts * 1000);
-    return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  const res = await fetch(`/api/quote?ticker=${encodeURIComponent(ticker)}`, {
+    signal: AbortSignal.timeout(10000),
   });
-  const closes = validPairs.map(d => d.close);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || '시세 데이터를 불러올 수 없어요');
 
-  const currentPrice = meta.regularMarketPrice;
-  const prevClose    = meta.previousClose ?? meta.chartPreviousClose ?? currentPrice;
-  const change       = currentPrice - prevClose;
-  const changePct    = prevClose !== 0 ? (change / prevClose) * 100 : 0;
-
-  const data = {
-    quote:   { price: currentPrice, change, changePct },
-    history: { dates: dates.slice(-30), closes: closes.slice(-30) },
-  };
   setAvCache(cacheKey, data);
   return data;
 }
@@ -963,18 +1110,18 @@ async function loadStockData(stockName, ticker) {
   document.getElementById('modal-chart-error').classList.add('hidden');
 
   try {
-    const { quote, history } = await fetchYahooFinance(ticker);
+    const { quote, history } = await fetchQuoteData(ticker);
 
     document.getElementById('modal-chart-loading').classList.add('hidden');
 
     const priceEl  = document.getElementById('modal-price');
     const changeEl = document.getElementById('modal-change');
-    priceEl.textContent = quote.price.toLocaleString('ko-KR') + '원';
-    const sign = quote.change >= 0 ? '+' : '';
-    changeEl.textContent = `${sign}${quote.change.toLocaleString('ko-KR', {maximumFractionDigits: 0})}원 (${sign}${quote.changePct.toFixed(2)}%)`;
+    priceEl.textContent = formatMarketPrice(quote.price, quote.currency);
+    const sign = quote.change >= 0 ? '+' : '-';
+    changeEl.textContent = `${sign}${formatMarketPrice(Math.abs(quote.change), quote.currency)} (${sign}${quote.changePct.toFixed(2)}%)`;
     changeEl.className   = 'text-sm font-semibold ' + (quote.change >= 0 ? 'c-profit' : 'c-loss');
 
-    renderModalChart(history);
+    renderModalChart(history, quote.currency);
     document.getElementById('modal-chart-area').classList.remove('hidden');
   } catch (err) {
     document.getElementById('modal-chart-loading').classList.add('hidden');
@@ -984,7 +1131,7 @@ async function loadStockData(stockName, ticker) {
   }
 }
 
-function renderModalChart(history) {
+function renderModalChart(history, currency) {
   if (modalChartInst) { modalChartInst.destroy(); modalChartInst = null; }
   const ctx   = document.getElementById('modal-chart').getContext('2d');
   const first = history.closes[0];
@@ -1023,7 +1170,7 @@ function renderModalChart(history) {
           titleFont: { family: 'Pretendard', size: 11 },
           bodyFont:  { family: 'Pretendard', size: 12 },
           padding: 8,
-          callbacks: { label: ctx => `  ${ctx.parsed.y.toLocaleString('ko-KR')}원` }
+          callbacks: { label: ctx => `  ${formatMarketPrice(ctx.parsed.y, currency)}` }
         }
       },
       scales: {
@@ -1042,21 +1189,26 @@ function renderModalChart(history) {
   });
 }
 
-function render({ stocks, header }, date) {
+function render({ stocks, header, cash }, date) {
   const totValue    = header?.totalValue    || stocks.reduce((s, x) => s + x.value, 0);
   const totInvested = header?.totalInvested || stocks.reduce((s, x) => s + x.invested, 0);
   const totPnl      = header?.totalPnl      ?? (totValue - totInvested);
-  const totRate     = header?.totalRate     ?? ((totValue - totInvested) / totInvested * 100);
+  const totRate     = header?.totalRate     ?? (totInvested > 0 ? ((totValue - totInvested) / totInvested * 100) : 0);
   const dailyPnl    = header?.dailyPnl      ?? null;
 
-  const cashKRW     = getCashKRW();
-  const cashUSD     = parseFloat(document.getElementById('cash-usd').value)  || 0;
-  const cashKRWOnly = parseFloat(document.getElementById('cash-krw').value)  || 0;
+  const cashState   = cash ? normalizeCashState(cash) : getCashStateFromInputs();
+  const cashKRW     = cashStateToKRW(cashState);
+  const cashUSD     = cashState.usd;
+  const cashKRWOnly = cashState.krwOnly;
+  const cashRate    = cashState.rate;
   const totValueAll = totValue + cashKRW; // 주식 + 원화 현금 + 달러 현금
 
   const section = document.getElementById('results');
+  document.body.classList.add('has-results');
   section.classList.remove('hidden');
   section.querySelectorAll('.card').forEach(triggerAnimation);
+  const inputCard = document.getElementById('input-card');
+  if (inputCard) inputCard.open = false;
 
   /* Date label */
   document.getElementById('result-date-label').textContent = date ? formatDateKR(date) : '';
@@ -1078,7 +1230,7 @@ function render({ stocks, header }, date) {
     breakdown.classList.remove('hidden');
     const cashParts = [];
     if (cashKRWOnly > 0) cashParts.push(`₩${cashKRWOnly.toLocaleString()}`);
-    if (cashUSD > 0) cashParts.push(`$${cashUSD.toLocaleString()} <span class="text-gray-300">(≈${formatKRW(cashUSD * (parseFloat(document.getElementById('cash-rate').value) || 0))})</span>`);
+    if (cashUSD > 0) cashParts.push(`$${cashUSD.toLocaleString()} <span class="text-gray-300">(≈${formatKRW(cashUSD * cashRate)})</span>`);
     breakdown.innerHTML = `주식 ${formatKRW(totValue)}<br>현금 ${cashParts.join(' + ')}`;
   } else {
     breakdown.classList.add('hidden');
@@ -1094,7 +1246,7 @@ function render({ stocks, header }, date) {
     animateNumber(sPnl, totPnl, 900, v => (v >= 0 ? '+' : '') + formatKRW(v));
   }
 
-  lastRenderData = { stocks, header, totRate, totValue, totValueAll, cashKRW, cashUSD, cashKRWOnly, date };
+  lastRenderData = { stocks, header, totRate, totValue, totValueAll, cashKRW, cashUSD, cashKRWOnly, cashRate, date };
   renderAnalysis(stocks, totRate, totValue);
   renderStrategyCard(stocks, totRate, totValue);
   renderStocks(stocks, totValue, cashKRW, cashUSD, totValueAll, cashKRWOnly);
@@ -1103,9 +1255,6 @@ function render({ stocks, header }, date) {
   renderCompareCard(date);
   renderGoalCard(totRate);
 
-  // AI 분석 버튼 노출
-  const aiRow = document.getElementById('ai-analyze-row');
-  if (aiRow) aiRow.style.removeProperty('display');
 }
 
 function renderCompareCard(currentDate) {
@@ -1120,8 +1269,8 @@ function renderCompareCard(currentDate) {
   const prev = snaps[prevDate];
   const curr = snaps[currentDate];
 
-  const prevVal  = prev.header?.totalValue || prev.stocks.reduce((s, x) => s + x.value, 0);
-  const currVal  = curr.header?.totalValue || curr.stocks.reduce((s, x) => s + x.value, 0);
+  const prevVal  = getSnapshotTotalAssetValue(prev);
+  const currVal  = getSnapshotTotalAssetValue(curr);
   const prevRate = prev.header?.totalRate  ?? 0;
   const currRate = curr.header?.totalRate  ?? 0;
 
@@ -1265,10 +1414,11 @@ function renderAnalysis(stocks, totRate, totValue) {
   const warns = [];
   stocks.forEach(s => {
     const wt = s.value / totValue * 100;
-    if (wt > 50) warns.push(`🚨 <b>${s.name}</b>이(가) 전체의 <b>${wt.toFixed(0)}%</b>를 차지해요. 심각한 집중 위험입니다.`);
-    else if (wt > 30) warns.push(`⚖️ <b>${s.name}</b> 비중이 <b>${wt.toFixed(0)}%</b>예요. 특정 종목 쏠림을 주의하세요.`);
+    const safeName = escapeHTML(s.name);
+    if (wt > 50) warns.push(`🚨 <b>${safeName}</b>이(가) 전체의 <b>${wt.toFixed(0)}%</b>를 차지해요. 심각한 집중 위험입니다.`);
+    else if (wt > 30) warns.push(`⚖️ <b>${safeName}</b> 비중이 <b>${wt.toFixed(0)}%</b>예요. 특정 종목 쏠림을 주의하세요.`);
   });
-  big.forEach(s => warns.push(`🔴 <b>${s.name}</b> ${s.rate.toFixed(1)}% 손실 — 손절 라인을 검토해보세요.`));
+  big.forEach(s => warns.push(`🔴 <b>${escapeHTML(s.name)}</b> ${s.rate.toFixed(1)}% 손실 — 손절 라인을 검토해보세요.`));
   if (stocks.length < 3) warns.push('📊 종목 수가 적어요. 리스크 분산을 고려해보세요.');
   if (warns.length === 0) warns.push('✅ 특별한 리스크 요소가 감지되지 않았어요.');
 
@@ -1279,16 +1429,18 @@ function renderStocks(stocks, totValue, cashKRW = 0, cashUSD = 0, totValueAll = 
   const meta   = document.getElementById('stock-meta');
   const listEl = document.getElementById('stock-list');
   const sorted = [...stocks].sort((a, b) => b.value - a.value);
+  renderedStockRows = sorted;
   const hasDailyData = sorted.some(s => s.dailyPnl !== null);
   const baseTotal = totValueAll || totValue;
   const cashLabel = [cashKRWOnly > 0 ? '원화 현금' : '', cashUSD > 0 ? '달러 현금' : ''].filter(Boolean).join(' + ');
   meta.textContent = `총 ${sorted.length}개 종목` + (cashLabel ? ` + ${cashLabel}` : '');
 
-  listEl.innerHTML = sorted.map(s => {
+  listEl.innerHTML = sorted.map((s, index) => {
     const w   = (s.value / baseTotal * 100).toFixed(1);
     const cls = s.rate > 0 ? 'c-profit' : s.rate < 0 ? 'c-loss' : 'c-neutral';
     const bar = Math.min(Math.abs(s.rate) * 2.5, 100).toFixed(1);
     const bc  = s.rate >= 0 ? '#16B364' : '#F04438';
+    const safeName = escapeHTML(s.name);
     const dailyLine = hasDailyData && s.dailyPnl !== null
       ? `<div class="daily-line text-xs text-gray-400 mt-0.5">일간 <span class="${s.dailyPnl >= 0 ? 'c-profit' : 'c-loss'} font-semibold">${s.dailyRate >= 0 ? '+' : ''}${s.dailyRate?.toFixed(2)}% &nbsp;${s.dailyPnl >= 0 ? '+' : ''}${formatKRW(s.dailyPnl)}</span></div>`
       : '';
@@ -1296,7 +1448,7 @@ function renderStocks(stocks, totValue, cashKRW = 0, cashUSD = 0, totValueAll = 
     const beDiff    = hasPrice ? s.cur - s.avg : 0;
     const bePct     = hasPrice ? ((s.cur - s.avg) / s.avg * 100) : 0;
     const beLine    = hasPrice
-      ? `<div class="flex items-center gap-4 text-xs text-gray-400 mt-1.5 mb-1">
+      ? `<div class="stock-detail-line text-xs text-gray-400 mt-1.5 mb-1">
            <span>매수평균 <span class="font-semibold text-gray-600">${formatKRW(s.avg)}</span></span>
            <span>현재가 <span class="font-semibold ${s.cur >= s.avg ? 'c-profit' : 'c-loss'}">${formatKRW(s.cur)}</span>
              <span class="ml-1 ${beDiff >= 0 ? 'c-profit' : 'c-loss'}">(${beDiff >= 0 ? '+' : ''}${bePct.toFixed(1)}%)</span>
@@ -1304,11 +1456,11 @@ function renderStocks(stocks, totValue, cashKRW = 0, cashUSD = 0, totValueAll = 
          </div>`
       : '';
     return `
-      <div class="stock-row" onclick="this.classList.toggle('expanded')">
+      <div class="stock-row" onclick="openStockModalByIndex(${index})" title="클릭해서 상세 보기">
         <div class="flex items-start justify-between mb-2">
           <div class="flex-1 min-w-0">
             <div>
-              <span class="font-semibold text-gray-900 text-sm">${s.name}</span>
+              <span class="font-semibold text-gray-900 text-sm">${safeName}</span>
               <span class="text-xs text-gray-500 ml-1.5">${w}%</span>
             </div>
             <div class="flex items-baseline gap-2 mt-1.5">
@@ -1423,6 +1575,8 @@ function renderStockChart(stocks) {
 function renderAllocationChart(stocks, totValue, cashKRW = 0, cashKRWOnly = 0) {
   const ctx = document.getElementById('allocation-chart').getContext('2d');
   if (allocChartInst) { allocChartInst.destroy(); allocChartInst = null; }
+  const listEl = document.getElementById('allocation-list');
+  if (listEl) listEl.innerHTML = '';
 
   const totValueAll = totValue + cashKRW;
   if (!totValueAll || totValueAll <= 0 || !stocks.length) {
@@ -1453,6 +1607,22 @@ function renderAllocationChart(stocks, totValue, cashKRW = 0, cashKRWOnly = 0) {
     colors.push('#64748B');
   }
 
+  if (listEl) {
+    const items = labels.map((label, i) => ({ label, value: data[i], color: colors[i] }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+    const rest = data.reduce((sum, v) => sum + v, 0) - items.reduce((sum, item) => sum + item.value, 0);
+    if (rest > 0.05) items.push({ label: '기타', value: +rest.toFixed(1), color: '#CBD5E1' });
+    listEl.innerHTML = items.map(item => `
+      <div class="allocation-item">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="allocation-dot" style="background:${item.color}"></span>
+          <span class="truncate">${escapeHTML(item.label)}</span>
+        </div>
+        <span class="font-bold text-gray-700">${item.value.toFixed(1)}%</span>
+      </div>`).join('');
+  }
+
   allocChartInst = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -1472,7 +1642,7 @@ function renderAllocationChart(stocks, totValue, cashKRW = 0, cashKRWOnly = 0) {
       animation: { duration: 700, easing: 'easeOutQuart' },
       plugins: {
         legend: {
-          display: true,
+          display: false,
           position: 'bottom',
           labels: {
             font: { family: 'Pretendard', size: 11 },
@@ -1510,6 +1680,8 @@ function renderHistorySection(activeDate) {
   const section = document.getElementById('history-section');
   section.classList.remove('hidden');
   document.getElementById('export-card').style.display = '';
+  const toolsCard = document.getElementById('data-tools-card');
+  if (toolsCard && activeDate) toolsCard.open = false;
 
   renderHistoryChart(snaps, dates, activeDate);
   renderSnapshotList(snaps, activeDate);
@@ -1528,8 +1700,8 @@ function renderHistoryChart(snaps, dates, activeDate) {
   const ctx = document.getElementById('history-chart').getContext('2d');
   if (histChartInst) { histChartInst.destroy(); histChartInst = null; }
 
-  const values    = dates.map(d => snaps[d].header?.totalValue    || snaps[d].stocks.reduce((s, x) => s + x.value, 0));
-  const investeds = dates.map(d => snaps[d].header?.totalInvested || snaps[d].stocks.reduce((s, x) => s + x.invested, 0));
+  const values    = dates.map(d => getSnapshotTotalAssetValue(snaps[d]));
+  const investeds = dates.map(d => getSnapshotTotalCostValue(snaps[d]));
   const labels    = dates.map(d => {
     const dd = new Date(d + 'T00:00:00');
     return `${dd.getMonth()+1}/${dd.getDate()}`;
@@ -1545,7 +1717,7 @@ function renderHistoryChart(snaps, dates, activeDate) {
       labels,
       datasets: [
         {
-          label: '총 평가금액',
+          label: '총 자산',
           data: values,
           borderColor: '#3182F6',
           backgroundColor: 'rgba(49,130,246,.07)',
@@ -1602,16 +1774,17 @@ function renderHistoryChart(snaps, dates, activeDate) {
 function renderSnapshotList(snaps, activeDate) {
   const listEl = document.getElementById('snapshot-list');
   const dates  = Object.keys(snaps).sort().reverse();
+  renderedSnapshotDates = dates;
 
-  listEl.innerHTML = dates.map(d => {
+  listEl.innerHTML = dates.map((d, index) => {
     const snap  = snaps[d];
     const val   = snap.header?.totalValue    || snap.stocks.reduce((s, x) => s + x.value, 0);
     const rate  = snap.header?.totalRate     ?? 0;
     const isAct = d === activeDate;
     const rcls  = rate >= 0 ? 'text-green-500' : 'text-red-500';
     return `
-      <button class="snap-pill ${isAct ? 'active' : ''}" onclick="loadSnapshot('${d}')">
-        ${formatDateKR(d)}
+      <button class="snap-pill ${isAct ? 'active' : ''}" onclick="loadSnapshotByIndex(${index})">
+        ${escapeHTML(formatDateKR(d))}
         <span class="snap-rate text-xs font-normal ${isAct ? '' : rcls}">${pctFmt(rate)}</span>
       </button>`;
   }).join('');
@@ -1673,8 +1846,8 @@ function renderPeriodList(snaps) {
     const firstSnap   = snaps[periodDates[0]];
     const lastSnap    = snaps[periodDates[periodDates.length - 1]];
 
-    const firstVal  = firstSnap.header?.totalValue || firstSnap.stocks.reduce((s, x) => s + x.value, 0);
-    const lastVal   = lastSnap.header?.totalValue  || lastSnap.stocks.reduce((s, x) => s + x.value, 0);
+    const firstVal  = getSnapshotTotalAssetValue(firstSnap);
+    const lastVal   = getSnapshotTotalAssetValue(lastSnap);
     const firstRate = firstSnap.header?.totalRate  ?? 0;
     const lastRate  = lastSnap.header?.totalRate   ?? 0;
 
@@ -1694,7 +1867,7 @@ function renderPeriodList(snaps) {
     return `
       <div class="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
         <div>
-          <div class="text-sm font-semibold text-gray-800">${label}</div>
+          <div class="text-sm font-semibold text-gray-800">${escapeHTML(label)}</div>
           <div class="text-xs text-gray-400 mt-0.5">${periodDates.length}개 기록</div>
         </div>
         <div class="text-right">
@@ -1778,7 +1951,7 @@ function renderStrategyCard(stocks, totRate, totValue) {
     '<div class="text-xs font-semibold text-gray-400 mb-2">종목별 액션</div>' +
     actionable.map(s => `
       <div class="flex items-center justify-between py-1.5">
-        <span class="text-sm font-semibold text-gray-800">${s.name}</span>
+        <span class="text-sm font-semibold text-gray-800">${escapeHTML(s.name)}</span>
         <div class="flex items-center gap-2">
           <span class="text-xs ${s.rate >= 0 ? 'c-profit' : 'c-loss'} font-semibold">
             ${s.rate >= 0 ? '+' : ''}${s.rate.toFixed(1)}%
@@ -1805,11 +1978,12 @@ function exportCSV() {
   const dates = Object.keys(snaps).sort();
   if (!dates.length) { showToast('저장된 기록이 없어요'); return; }
 
-  const rows = [['날짜', '종목명', '평가금액', '수익률(%)', '평가손익', '매수평균가', '현재가', '수량', '비중(%)']];
+  const rows = [['날짜', '종목명', '평가금액', '수익률(%)', '평가손익', '매수평균가', '현재가', '수량', '비중(%)', '현금원화', '현금달러', '환율']];
 
   dates.forEach(date => {
     const snap = snaps[date];
-    const totVal = snap.header?.totalValue || snap.stocks.reduce((s, x) => s + x.value, 0);
+    const cash = normalizeCashState(snap.cash);
+    const totVal = getSnapshotTotalAssetValue(snap);
     snap.stocks.forEach(s => {
       rows.push([
         date,
@@ -1821,11 +1995,14 @@ function exportCSV() {
         Math.round(s.cur),
         s.qty,
         totVal > 0 ? (s.value / totVal * 100).toFixed(1) : '0',
+        Math.round(cash.krwOnly),
+        cash.usd,
+        cash.rate,
       ]);
     });
   });
 
-  const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n'); // BOM for Excel 한글
+  const csv = '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\n'); // BOM for Excel 한글
   downloadFile(csv, `portfolio_${dates[0]}_${dates[dates.length-1]}.csv`, 'text/csv;charset=utf-8');
   showToast('CSV 다운로드 완료');
 }
@@ -1837,6 +2014,94 @@ function exportJSON() {
   const today = new Date().toISOString().slice(0, 10);
   downloadFile(json, `portfolio_backup_${today}.json`, 'application/json');
   showToast('JSON 다운로드 완료');
+}
+
+function importCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const rows = parseCSVRows(e.target.result);
+      if (!rows.length) { showToast('빈 파일이에요'); return; }
+
+      // 헤더 행 건너뜀
+      const hasHeader = String(rows[0][0] || '').trim() === '날짜';
+      const headerRow = hasHeader ? rows[0].map(c => String(c).trim()) : [];
+      const dataRows = hasHeader ? rows.slice(1) : rows;
+      const colIndex = (name, fallback) => {
+        const idx = headerRow.indexOf(name);
+        return idx >= 0 ? idx : fallback;
+      };
+      const idxDate = colIndex('날짜', 0);
+      const idxName = colIndex('종목명', 1);
+      const idxValue = colIndex('평가금액', 2);
+      const idxRate = colIndex('수익률(%)', 3);
+      const idxPnl = colIndex('평가손익', 4);
+      const idxAvg = colIndex('매수평균가', 5);
+      const idxCur = colIndex('현재가', 6);
+      const idxQty = colIndex('수량', 7);
+      const idxCashKrw = colIndex('현금원화', 9);
+      const idxCashUsd = colIndex('현금달러', 10);
+      const idxCashRate = colIndex('환율', 11);
+
+      const byDate = {};
+      const cashByDate = {};
+      for (const row of dataRows) {
+        const cols = row.map(c => c.trim());
+        if (cols.length < 8) continue;
+        const date = cols[idxDate];
+        const name = cols[idxName];
+        if (!date || !name) continue;
+        const value    = parsePlainNumber(cols[idxValue]);
+        const rate     = parsePlainNumber(cols[idxRate]);
+        const pnl      = parsePlainNumber(cols[idxPnl]);
+        const avg      = parsePlainNumber(cols[idxAvg]);
+        const cur      = parsePlainNumber(cols[idxCur]);
+        const qty      = parsePlainNumber(cols[idxQty]);
+        const invested = value - pnl;
+        if (!byDate[date]) byDate[date] = [];
+        byDate[date].push({ name, rate, pnl, avg, cur, qty, value, invested, dailyRate: null, dailyPnl: null });
+        if (cols[idxCashKrw] || cols[idxCashUsd] || cols[idxCashRate]) {
+          cashByDate[date] = {
+            krwOnly: parsePlainNumber(cols[idxCashKrw]),
+            usd: parsePlainNumber(cols[idxCashUsd]),
+            rate: parsePlainNumber(cols[idxCashRate]),
+          };
+        }
+      }
+
+      const dates = Object.keys(byDate);
+      if (!dates.length) { showToast('파싱할 데이터가 없어요'); return; }
+
+      const snaps = getSnapshots();
+      for (const date of dates) {
+        const stocks   = byDate[date];
+        const totalValue    = stocks.reduce((s, x) => s + x.value, 0);
+        const totalPnl      = stocks.reduce((s, x) => s + x.pnl,   0);
+        const totalInvested = totalValue - totalPnl;
+        const totalRate     = totalInvested > 0 ? totalPnl / totalInvested * 100 : 0;
+        snaps[date] = {
+          header: { totalValue, totalInvested, totalPnl, totalRate, dailyPnl: null, dailyRate: null },
+          stocks,
+          cash: cashByDate[date] || { krwOnly: 0, usd: 0, rate: 0 },
+          ts: Date.now(),
+        };
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snaps));
+
+      // 가장 최근 날짜로 바로 렌더
+      const latestDate = dates.sort().at(-1);
+      loadSnapshot(latestDate);
+      renderSnapshotList(snaps, latestDate);
+      showToast(`${dates.length}일치 기록을 불러왔어요`);
+    } catch (err) {
+      showToast('CSV 파싱 오류: ' + err.message);
+    } finally {
+      input.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 /* ══════════════════════════════════════════
@@ -1883,450 +2148,6 @@ function initDashboard() {
       onEnd: () => saveLayout(gridId),
     });
   });
-}
-
-/* ══════════════════════════════════════════
-   AI — API KEY
-══════════════════════════════════════════ */
-const AI_KEY_STORAGE = 'claude_api_key_v1';
-
-function getApiKey() {
-  return localStorage.getItem(AI_KEY_STORAGE) || '';
-}
-
-function onSaveApiKey() {
-  const val = document.getElementById('ai-key-input').value.trim();
-  if (!val) {
-    showToast('API 키를 입력해주세요');
-    return;
-  }
-  if (!val.startsWith('sk-ant-')) {
-    showToast('올바른 Claude API 키를 입력해주세요 (sk-ant- 로 시작)');
-    return;
-  }
-  localStorage.setItem(AI_KEY_STORAGE, val);
-  renderApiKeyStatus(true);
-  showToast('API 키가 저장됐어요');
-}
-
-function renderApiKeyStatus(saved) {
-  const statusEl = document.getElementById('ai-key-status');
-  const inputEl  = document.getElementById('ai-key-input');
-  if (saved) {
-    statusEl.innerHTML = '<span class="text-green-500 font-semibold">✓ 키 저장됨</span> · 개인 키는 이 기기에만 저장됩니다';
-    inputEl.placeholder = 'sk-ant-••••••••••••';
-    inputEl.value = '';
-  } else {
-    statusEl.textContent = '개인 키는 이 기기에만 저장됩니다';
-  }
-}
-
-/* ══════════════════════════════════════════
-   AI — CLAUDE API CALL
-══════════════════════════════════════════ */
-function buildAiPrompt(stocks, totRate, totValue) {
-  const portfolioJson = JSON.stringify({
-    totalRate: +totRate.toFixed(2),
-    totalValue: Math.round(totValue),
-    stocks: stocks.map(s => ({
-      name: s.name,
-      rate: +s.rate.toFixed(2),
-      weight: +(s.value / totValue * 100).toFixed(1),
-      value: Math.round(s.value),
-      pnl: Math.round(s.pnl),
-    }))
-  }, null, 2);
-
-  return `당신은 투자 분석 어시스턴트입니다. 아래 포트폴리오를 분석하고 반드시 JSON 형식으로만 응답하세요. 설명 텍스트 없이 JSON만 출력하세요.
-
-포트폴리오 데이터:
-${portfolioJson}
-
-응답 JSON 형식 (이 구조를 정확히 따르세요):
-{
-  "summary": "포트폴리오 전체 상태를 한두 문장으로 요약 (한국어)",
-  "riskScore": 숫자(1.0~10.0, 소수점 한 자리),
-  "riskReason": "리스크 점수 근거 한 줄 (한국어)",
-  "stocks": [
-    { "name": "종목명 (데이터와 정확히 동일하게)", "action": "매수 또는 매도 또는 유지", "comment": "한줄 분석 (한국어)" }
-  ]
-}
-
-주의:
-- action 값은 반드시 "매수", "매도", "유지" 셋 중 하나만 사용
-- stocks 배열은 입력 종목 전체를 포함
-- JSON 외 텍스트 절대 금지`;
-}
-
-async function callClaudeApi(prompt) {
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error('API_KEY_MISSING');
-
-  const body = JSON.stringify({
-    model: 'claude-3-5-haiku-20241022',
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: prompt }]
-  });
-
-  const targetUrl = 'https://api.anthropic.com/v1/messages';
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': apiKey,
-    'anthropic-version': '2023-06-01',
-    'anthropic-dangerous-direct-browser-access': 'true',
-  };
-
-  // 직접 호출 먼저 시도 (Anthropic 공식 브라우저 접근 지원)
-  // 실패 시 CORS 프록시 fallback
-  const attempts = [
-    () => fetch(targetUrl, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) }),
-    () => fetch(`https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`, { method: 'POST', headers, body, signal: AbortSignal.timeout(30000) }),
-  ];
-
-  let lastErr = null;
-  for (const attempt of attempts) {
-    try {
-      const res = await attempt();
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${errText.slice(0, 200)}`);
-      }
-      const data = await res.json();
-      const text = data.content?.[0]?.text || '';
-      // JSON 블록 추출 (마크다운 코드펜스 대응)
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('JSON_PARSE_FAIL');
-      try {
-        return JSON.parse(match[0]);
-      } catch {
-        throw new Error('JSON_PARSE_FAIL');
-      }
-    } catch (e) {
-      // Don't retry on app-level errors — only on network/proxy failures
-      if (e.message === 'JSON_PARSE_FAIL' || /^HTTP [45]/.test(e.message)) throw e;
-      lastErr = e;
-    }
-  }
-  throw lastErr || new Error('AI_CALL_FAILED');
-}
-
-/* ══════════════════════════════════════════
-   AI — RENDER
-══════════════════════════════════════════ */
-function renderAiCard(result, dateStr) {
-  const card    = document.getElementById('ai-card');
-  const loading = document.getElementById('ai-card-loading');
-  const content = document.getElementById('ai-card-content');
-
-  loading.classList.add('hidden');
-  content.classList.remove('hidden');
-  card.classList.remove('hidden');
-
-  // 날짜 레이블
-  document.getElementById('ai-card-date').textContent = dateStr ? formatDateKR(dateStr) + ' 기준' : '';
-
-  // 요약
-  document.getElementById('ai-summary').textContent = result.summary || '—';
-
-  // 리스크 점수
-  const score = typeof result.riskScore === 'number' ? result.riskScore : parseFloat(result.riskScore);
-  const clampedScore = isNaN(score) ? null : Math.min(10, Math.max(1, score));
-  document.getElementById('ai-risk-score').textContent = clampedScore !== null ? clampedScore.toFixed(1) : '—';
-  document.getElementById('ai-risk-reason').textContent = result.riskReason || '';
-  const ring = document.getElementById('ai-risk-ring');
-  ring.className = 'risk-score-ring ' + (clampedScore === null ? '' : clampedScore >= 7 ? 'risk-high' : clampedScore >= 4 ? 'risk-mid' : 'risk-low');
-
-  // 종목별
-  const stocksEl = document.getElementById('ai-stocks');
-  const actionClass = a => a === '매수' ? 'ai-action-buy' : a === '매도' ? 'ai-action-sell' : 'ai-action-hold';
-  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  stocksEl.innerHTML = (result.stocks || []).map(s => `
-    <div class="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <span class="text-sm font-bold text-gray-900 w-24 shrink-0">${esc(s.name)}</span>
-      <span class="badge ${actionClass(s.action)} shrink-0" style="font-size:11px;padding:3px 10px">${esc(s.action)}</span>
-      <span class="text-sm text-gray-600 leading-snug">${esc(s.comment)}</span>
-    </div>`).join('');
-}
-
-async function onAiAnalyze() {
-  if (!getApiKey()) {
-    showToast('API 키를 먼저 입력해주세요');
-    document.getElementById('ai-key-input').focus();
-    return;
-  }
-  if (!lastRenderData) {
-    showToast('먼저 포트폴리오를 분석해주세요');
-    return;
-  }
-
-  const btn     = document.getElementById('ai-analyze-btn');
-  const refresh = document.getElementById('ai-card-refresh');
-  const card    = document.getElementById('ai-card');
-  const loading = document.getElementById('ai-card-loading');
-  const content = document.getElementById('ai-card-content');
-
-  // 버튼 비활성화
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 분석 중...'; }
-  if (refresh) refresh.style.pointerEvents = 'none';
-
-  // 카드 로딩 상태
-  card.classList.remove('hidden');
-  loading.classList.remove('hidden');
-  content.classList.add('hidden');
-
-  try {
-    const { stocks, totRate, totValue, date } = lastRenderData;
-    const prompt = buildAiPrompt(stocks, totRate, totValue);
-    const result = await callClaudeApi(prompt);
-    renderAiCard(result, date);
-    showToast('✨ AI 분석 완료');
-  } catch (e) {
-    card.classList.add('hidden');
-    loading.classList.add('hidden');
-    if (e.message === 'API_KEY_MISSING') {
-      showToast('API 키를 먼저 입력해주세요');
-    } else if (e.message === 'JSON_PARSE_FAIL') {
-      showToast('응답 형식 오류. 다시 시도해주세요');
-    } else {
-      const msg = e.message || '';
-      if (msg.includes('credit balance') || msg.includes('billing')) {
-        showToast('크레딧 부족 — console.anthropic.com에서 충전해주세요');
-      } else if (msg.includes('401') || msg.includes('authentication')) {
-        showToast('API 키가 올바르지 않아요. 다시 확인해주세요');
-      } else {
-        showToast('AI 분석 실패: ' + msg.slice(0, 50));
-      }
-      console.error('[AI]', e);
-    }
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<span>✨</span> AI 분석하기'; }
-    if (refresh) refresh.style.pointerEvents = '';
-  }
-}
-
-function onCopyAiPrompt() {
-  if (!lastRenderData) { showToast('먼저 포트폴리오를 분석해주세요'); return; }
-  const { stocks, totRate, totValue, totValueAll, cashKRW, cashUSD, cashKRWOnly } = lastRenderData;
-
-  const tickerMap = getTickerMap();
-  const stockLines = stocks.map(s => {
-    const w      = (s.value / (totValueAll || totValue) * 100).toFixed(1);
-    const ticker = tickerMap[s.name] ? ` (${tickerMap[s.name]})` : '';
-    return `- ${s.name}${ticker}: 수익률 ${s.rate >= 0 ? '+' : ''}${s.rate.toFixed(2)}%, 비중 ${w}%, 평가금 ${formatKRW(s.value)} (손익 ${s.pnl >= 0 ? '+' : ''}${formatKRW(s.pnl)})`;
-  }).join('\n');
-
-  const tickerList = stocks
-    .map(s => tickerMap[s.name])
-    .filter(Boolean)
-    .join(', ');
-
-  const cashLines = [];
-  const safeKRWOnly = cashKRWOnly || 0;
-  if (safeKRWOnly > 0) cashLines.push(`\n- 원화 현금: ${formatKRW(safeKRWOnly)}, 비중 ${(safeKRWOnly / (totValueAll || totValue) * 100).toFixed(1)}%`);
-  if (cashUSD > 0) {
-    const usdKRW = cashKRW - safeKRWOnly;
-    cashLines.push(`\n- 달러 현금: $${cashUSD.toLocaleString()} (≈ ${formatKRW(usdKRW)}), 비중 ${(usdKRW / (totValueAll || totValue) * 100).toFixed(1)}%`);
-  }
-  const cashLine = cashLines.join('');
-
-  const searchInstruction = tickerList
-    ? `## 분석 전 반드시 할 것 (웹 검색 사용)
-아래 종목들에 대해 분석 전에 다음을 검색해줘:
-1. 각 종목의 **현재 주가** 및 **최근 등락률** (${tickerList})
-2. 각 종목의 **최근 1~2주 주요 뉴스** (실적 발표, 계약, 이슈 등)
-3. **미국 시장 전반 분위기** (금리, 지수 흐름 등 최근 동향)
-
-검색 결과를 바탕으로 아래 포트폴리오 데이터와 함께 분석해줘.
-
-`
-    : '';
-
-  const prompt = `${searchInstruction}포트폴리오 봐줘.
-
-## 포트폴리오 현황 (${lastRenderData.date || '오늘'} 기준 내 매수 데이터)
-- 총 수익률 (주식): ${totRate >= 0 ? '+' : ''}${totRate.toFixed(2)}%
-- 주식 평가금: ${formatKRW(totValue)}
-- 총 자산 (현금 포함): ${formatKRW(totValueAll || totValue)}
-
-## 종목 리스트
-${stockLines}${cashLine}
-
-## 요청
-검색한 현재 시세·뉴스와 내 매수 데이터를 함께 고려해서 포트폴리오 진단 포맷에 맞춰 분석해줘.
-각 종목별로 📌 한줄 결론과 🎯 액션 제안(단기/중기)도 포함해줘.`;
-
-  navigator.clipboard.writeText(prompt).then(() => {
-    showToast('✅ 프롬프트 복사 완료 — claude.ai에 붙여넣기 하세요');
-  }).catch(() => {
-    // fallback: textarea
-    const ta = document.createElement('textarea');
-    ta.value = prompt;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('✅ 프롬프트 복사 완료 — claude.ai에 붙여넣기 하세요');
-  });
-}
-
-/* ══════════════════════════════════════════
-   PASTE ANALYSIS
-══════════════════════════════════════════ */
-function showPasteModal() {
-  const modal = document.getElementById('paste-modal');
-  modal.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  setTimeout(() => document.getElementById('paste-input').focus(), 100);
-}
-
-function closePasteModal(e) {
-  if (e && e.target !== document.getElementById('paste-modal')) return;
-  document.getElementById('paste-modal').classList.add('hidden');
-  document.body.style.overflow = '';
-}
-
-function onSubmitPaste() {
-  const text = document.getElementById('paste-input').value.trim();
-  if (!text) { showToast('분석 결과를 붙여넣어 주세요'); return; }
-  const data = parseClaudeAnalysis(text);
-  renderPasteCard(data);
-  document.getElementById('paste-modal').classList.add('hidden');
-  document.body.style.overflow = '';
-  showToast('✅ 분석 결과 적용됨');
-}
-
-function parseClaudeAnalysis(text) {
-  const result = { date: '', market: '', overall: '', risk: '', rebalancing: '', stocks: [] };
-
-  const dateMatch = text.match(/\d{4}-\d{2}-\d{2}/);
-  if (dateMatch) result.date = dateMatch[0];
-
-  const sec = (emoji, next) => {
-    const re = new RegExp(emoji + '[^\n]*\n+([\\s\\S]*?)(?=' + next + '|$)');
-    const m = text.match(re);
-    return m ? m[1].replace(/^---+\s*/gm, '').trim() : '';
-  };
-
-  result.market      = sec('🌐', '(?:---|🔍|🚨|💡|⭐)');
-  result.overall     = sec('🔍', '(?:---|🚨|💡|⭐)');
-  result.risk        = sec('🚨', '(?:---|💡|⭐)');
-  result.rebalancing = sec('💡', '(?:---|⭐)');
-
-  // Extract per-stock blocks under ⭐ 종목별 분석
-  const stocksSection = text.match(/⭐[^\n]*\n+([\s\S]*?)(?=\n▎|\n⚠️ 위 분석|$)/);
-  if (stocksSection) {
-    const blocks = stocksSection[1].split(/\n---+\n/).map(b => b.trim()).filter(Boolean);
-    for (const block of blocks) {
-      const lines = block.split('\n');
-      // Header: "RKLB — 로켓 랩 | 현재가 ~$70"  or  "RKLB — 로켓 랩"
-      const hm = lines[0].match(/^([A-Z0-9]+)\s*[—–\-]+\s*([^|]+?)(?:\s*\|\s*(.+))?$/);
-      if (!hm) continue;
-      const ticker    = hm[1].trim();
-      const name      = hm[2].trim();
-      const priceInfo = (hm[3] || '').trim();
-
-      const conclusion = (block.match(/📌[^\n]*\n+→\s*(.+)/) || [])[1]?.trim() || '';
-      const newsM = block.match(/주요 뉴스\s*\n+([\s\S]*?)(?=\n🎯|$)/);
-      const news  = newsM ? newsM[1].trim() : '';
-      const actionM = block.match(/🎯[^\n]*\n+([\s\S]*?)$/);
-      const action  = actionM ? actionM[1].trim() : '';
-
-      result.stocks.push({ ticker, name, priceInfo, conclusion, news, action });
-    }
-  }
-  return result;
-}
-
-function renderPasteCard(data) {
-  const card    = document.getElementById('paste-result-card');
-  const content = document.getElementById('paste-result-content');
-  const dateEl  = document.getElementById('paste-date-label');
-
-  dateEl.textContent = data.date ? data.date + ' 기준 (실시간 시세·뉴스 반영)' : '실시간 시세·뉴스 반영';
-  card.classList.remove('hidden');
-
-  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const md2html = s => esc(s)
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^([-•]\s.+)$/gm, '<li class="ml-3">$1</li>')
-    .replace(/^(\d+\.\s.+)$/gm, '<li class="ml-3">$1</li>')
-    .replace(/✅/g, '<span class="text-green-500">✅</span>')
-    .replace(/⚠️/g, '<span class="text-amber-500">⚠️</span>')
-    .replace(/📈/g, '<span class="text-blue-500">📈</span>')
-    .replace(/\n/g, '<br>');
-
-  // Risk score extraction
-  const riskScoreM = data.risk.match(/리스크 점수[^0-9]*([0-9]+)\s*[\/\s]\s*10/);
-  const riskScore  = riskScoreM ? parseInt(riskScoreM[1]) : null;
-  const riskColor  = riskScore === null ? 'gray' : riskScore >= 7 ? 'red' : riskScore >= 4 ? 'amber' : 'green';
-  const riskBadge  = riskScore !== null
-    ? `<span class="badge badge-${riskColor === 'red' ? 'danger' : riskColor === 'amber' ? 'warning' : 'good'} ml-2">${riskScore}/10</span>`
-    : '';
-
-  // Summary sections
-  const summaryHtml = `
-    <div class="grid grid-cols-1 gap-3 mb-5">
-      ${data.overall ? `
-      <div class="bg-blue-50 rounded-2xl px-4 py-3">
-        <div class="text-xs font-semibold text-blue-400 mb-1">🔍 종합 평가</div>
-        <div class="text-sm text-gray-700 leading-relaxed">${md2html(data.overall)}</div>
-      </div>` : ''}
-      ${data.risk ? `
-      <div class="bg-red-50 rounded-2xl px-4 py-3">
-        <div class="flex items-center text-xs font-semibold text-red-400 mb-1">🚨 리스크 경고${riskBadge}</div>
-        <div class="text-sm text-gray-700 leading-relaxed">${md2html(data.risk)}</div>
-      </div>` : ''}
-      ${data.rebalancing ? `
-      <div class="bg-green-50 rounded-2xl px-4 py-3">
-        <div class="text-xs font-semibold text-green-500 mb-1">💡 리밸런싱 제안</div>
-        <div class="text-sm text-gray-700 leading-relaxed">${md2html(data.rebalancing)}</div>
-      </div>` : ''}
-      ${data.market ? `
-      <details class="bg-gray-50 rounded-2xl px-4 py-3">
-        <summary class="text-xs font-semibold text-gray-400 cursor-pointer select-none">🌐 시장 환경 요약 펼치기</summary>
-        <div class="text-sm text-gray-600 leading-relaxed mt-2">${md2html(data.market)}</div>
-      </details>` : ''}
-    </div>`;
-
-  // Per-stock rows
-  const stocksHtml = data.stocks.length ? `
-    <div class="text-xs font-semibold text-gray-500 mb-2">⭐ 종목별 분석 (클릭해서 펼치기)</div>
-    <div class="space-y-2">
-    ${data.stocks.map((s, i) => {
-      const actionColor = s.conclusion.includes('매도') ? 'c-loss' : s.conclusion.includes('익절') ? 'c-loss' : 'c-profit';
-      return `
-      <details class="bg-gray-50 rounded-2xl overflow-hidden">
-        <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-gray-100 transition">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-gray-400 bg-white px-2 py-0.5 rounded-lg border border-gray-200">${esc(s.ticker)}</span>
-            <span class="text-sm font-semibold text-gray-800">${esc(s.name)}</span>
-            ${s.priceInfo ? `<span class="text-xs text-gray-400">${esc(s.priceInfo)}</span>` : ''}
-          </div>
-          <span class="text-xs text-gray-400">▾</span>
-        </summary>
-        <div class="px-4 pb-4 pt-1 space-y-3">
-          ${s.conclusion ? `
-          <div class="bg-white rounded-xl px-3 py-2.5">
-            <div class="text-xs font-semibold text-gray-400 mb-1">📌 한줄 결론</div>
-            <div class="text-sm text-gray-700 leading-relaxed">→ ${md2html(s.conclusion)}</div>
-          </div>` : ''}
-          ${s.news ? `
-          <div>
-            <div class="text-xs font-semibold text-gray-400 mb-1.5">📰 주요 뉴스</div>
-            <div class="text-sm text-gray-700 leading-relaxed space-y-0.5">${md2html(s.news)}</div>
-          </div>` : ''}
-          ${s.action ? `
-          <div class="bg-white rounded-xl px-3 py-2.5">
-            <div class="text-xs font-semibold text-gray-400 mb-1">🎯 액션 제안</div>
-            <div class="text-sm text-gray-700 leading-relaxed">${md2html(s.action)}</div>
-          </div>` : ''}
-        </div>
-      </details>`;
-    }).join('')}
-    </div>` : '';
-
-  content.innerHTML = summaryHtml + stocksHtml;
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ══════════════════════════════════════════
@@ -2475,11 +2296,9 @@ document.getElementById('portfolio-input').addEventListener('keydown', e => {
     /* Auto-load latest */
     const latest = dates[dates.length - 1];
     const snap   = snaps[latest];
-    render({ stocks: snap.stocks, header: snap.header }, latest);
+    render({ stocks: snap.stocks, header: snap.header, cash: snap.cash }, latest);
     renderSnapshotList(snaps, latest);
   }
-  /* Restore AI key status */
-  if (getApiKey()) renderApiKeyStatus(true);
 })();
 </script>
 </body>
